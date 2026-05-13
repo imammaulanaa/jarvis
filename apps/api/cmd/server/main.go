@@ -7,12 +7,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/joho/godotenv"
 
 	"github.com/imammaulanaa/jarvis/api/internal/database"
 )
 
 func main() {
 	// Connect database
+	_ = godotenv.Load("../../.env")
+
 	db, err := database.New()
 	if err != nil {
 		log.Fatalf("Database error: %v", err)
