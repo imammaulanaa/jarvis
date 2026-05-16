@@ -10,7 +10,7 @@ linters:
     - staticcheck
     - unused
 
-issues:
-  exclude-rules:
+exclusions:
+  rules:
     - path: cmd/server/main.go
       linters: [errcheck]
