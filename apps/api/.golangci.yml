@@ -3,9 +3,8 @@ version: "2"
 linters:
   default: none
   enable:
-    - errcheck
-    - gosimple
     - govet
-    - ineffassign
     - staticcheck
     - unused
+    - errcheck
+    - ineffassign
