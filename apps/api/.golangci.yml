@@ -9,8 +9,3 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-
-exclusions:
-  rules:
-    - path: cmd/server/main.go
-      linters: [errcheck]
