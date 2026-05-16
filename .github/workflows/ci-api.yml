@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.0'
           cache-dependency-path: apps/api/go.sum
 
       - name: golangci-lint
@@ -54,7 +54,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.0'
           cache-dependency-path: apps/api/go.sum
 
       - name: Download dependencies
@@ -64,7 +64,7 @@ jobs:
       - name: Run tests
         working-directory: apps/api
         env:
-          DATABASE_URL: postgres://jarvis:secret@localhost:5432/jarvis_test?sslmode=disable
+          DATABASE_URL: postgres://root:secret@localhost:5432/jarvis_test?sslmode=disable
         run: go test ./... -v -race -coverprofile=coverage.out
 
       - name: Upload coverage
@@ -82,7 +82,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25.0'
           cache-dependency-path: apps/api/go.sum
 
       - name: Build binary
