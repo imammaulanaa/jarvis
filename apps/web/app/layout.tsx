@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import AuthProvider from "@/components/providers/AuthProvider"
-import { auth } from "@/lib/auth"
+import ThemeProvider from "@/components/providers/ThemeProvider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -11,17 +11,15 @@ export const metadata: Metadata = {
   description: "Just A Really Versatile Infrastructure System",
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const session = await auth()
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider session={session}>{children}</AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
