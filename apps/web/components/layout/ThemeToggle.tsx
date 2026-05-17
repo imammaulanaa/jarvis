@@ -2,14 +2,18 @@
 
 import { useTheme } from "next-themes"
 import { Sun, Moon, Monitor } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import { cn } from "@/lib/cn"
+
+function subscribe(cb: () => void) {
+  window.addEventListener("storage", cb)
+  return () => window.removeEventListener("storage", cb)
+}
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false)
 
-  useEffect(() => { setMounted(true) }, [])
   if (!mounted) return <div className="w-8 h-8" />
 
   const options = [
@@ -19,8 +23,10 @@ export default function ThemeToggle() {
   ]
 
   return (
-    <div className="flex items-center gap-0.5 p-1 rounded-lg border"
-      style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
+    <div
+      className="flex items-center gap-0.5 p-1 rounded-lg border"
+      style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+    >
       {options.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
