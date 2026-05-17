@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"errors"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -18,7 +18,7 @@ type ServiceHandler struct {
 
 func NewServiceHandler(
 	serviceRepo *repository.ServiceRepository,
-	auditRepo *repository.AuditRepository,
+	auditRepo   *repository.AuditRepository,
 ) *ServiceHandler {
 	return &ServiceHandler{serviceRepo: serviceRepo, auditRepo: auditRepo}
 }
@@ -35,12 +35,16 @@ func (h *ServiceHandler) List(c *fiber.Ctx) error {
 	}
 
 	if tags := c.Query("tags"); tags != "" {
-		filter.Tags = fiber.Map{"tags": tags}.([]string)
+		filter.Tags = strings.Split(tags, ",")
 	}
 
 	services, total, err := h.serviceRepo.List(c.Context(), filter)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "failed to fetch services"})
+		c.Context().Logger().Printf("List services error: %v", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error":  "failed to fetch services",
+			"detail": err.Error(),
+		})
 	}
 
 	return c.JSON(fiber.Map{
@@ -74,13 +78,13 @@ func (h *ServiceHandler) Create(c *fiber.Ctx) error {
 	claims := auth.GetUser(c)
 	svc, err := h.serviceRepo.Create(c.Context(), input, claims.UserID)
 	if err != nil {
-		if errors.Is(err, errors.New("duplicate")) {
-			return c.Status(409).JSON(fiber.Map{"error": "service with this slug already exists"})
-		}
-		return c.Status(500).JSON(fiber.Map{"error": "failed to create service"})
+		c.Context().Logger().Printf("Create service error: %v", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error":  "failed to create service",
+			"detail": err.Error(),
+		})
 	}
 
-	// Audit log
 	_ = h.auditRepo.Log(c.Context(), &claims.UserID,
 		model.ActionServiceCreated, "service", &svc.ID,
 		fiber.Map{"slug": svc.Slug, "name": svc.Name},
@@ -100,7 +104,11 @@ func (h *ServiceHandler) Update(c *fiber.Ctx) error {
 
 	svc, err := h.serviceRepo.Update(c.Context(), slug, input)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "failed to update service"})
+		c.Context().Logger().Printf("Update service error: %v", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error":  "failed to update service",
+			"detail": err.Error(),
+		})
 	}
 
 	claims := auth.GetUser(c)
@@ -122,7 +130,11 @@ func (h *ServiceHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	if err := h.serviceRepo.Delete(c.Context(), slug); err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "failed to delete service"})
+		c.Context().Logger().Printf("Delete service error: %v", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error":  "failed to delete service",
+			"detail": err.Error(),
+		})
 	}
 
 	claims := auth.GetUser(c)
@@ -135,7 +147,7 @@ func (h *ServiceHandler) Delete(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "service archived successfully"})
 }
 
-// helper — parse UUID dari query param
+// parseUUID — helper parse UUID dari string
 func parseUUID(s string) *uuid.UUID {
 	if s == "" {
 		return nil
