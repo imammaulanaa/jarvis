@@ -1,0 +1,173 @@
+package repository
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
+
+	"github.com/imammaulanaa/jarvis/api/internal/model"
+)
+
+type ServiceRepository struct {
+	db *sqlx.DB
+}
+
+func NewServiceRepository(db *sqlx.DB) *ServiceRepository {
+	return &ServiceRepository{db: db}
+}
+
+type ListServicesFilter struct {
+	Search    string
+	TeamID    *uuid.UUID
+	Status    string
+	Lifecycle string
+	Tier      string
+	Tags      []string
+	Limit     int
+	Offset    int
+}
+
+func (r *ServiceRepository) List(ctx context.Context, f ListServicesFilter) ([]model.Service, int, error) {
+	if f.Limit == 0 {
+		f.Limit = 20
+	}
+
+	where := []string{"lifecycle != 'archived'"}
+	args  := []interface{}{}
+	idx   := 1
+
+	if f.Search != "" {
+		where = append(where, fmt.Sprintf(
+			"(name ILIKE $%d OR slug ILIKE $%d OR description ILIKE $%d)",
+			idx, idx+1, idx+2,
+		))
+		q := "%" + f.Search + "%"
+		args = append(args, q, q, q)
+		idx += 3
+	}
+	if f.Status != "" {
+		where = append(where, fmt.Sprintf("status = $%d", idx))
+		args = append(args, f.Status)
+		idx++
+	}
+	if f.Lifecycle != "" {
+		where = append(where, fmt.Sprintf("lifecycle = $%d", idx))
+		args = append(args, f.Lifecycle)
+		idx++
+	}
+	if f.Tier != "" {
+		where = append(where, fmt.Sprintf("tier = $%d", idx))
+		args = append(args, f.Tier)
+		idx++
+	}
+	if f.TeamID != nil {
+		where = append(where, fmt.Sprintf("team_id = $%d", idx))
+		args = append(args, f.TeamID)
+		idx++
+	}
+	if len(f.Tags) > 0 {
+		where = append(where, fmt.Sprintf("tags @> $%d", idx))
+		args = append(args, pq.Array(f.Tags))
+		idx++
+	}
+
+	whereSQL := "WHERE " + strings.Join(where, " AND ")
+
+	// Count total
+	var total int
+	countSQL := "SELECT COUNT(*) FROM services " + whereSQL
+	if err := r.db.GetContext(ctx, &total, countSQL, args...); err != nil {
+		return nil, 0, fmt.Errorf("count services: %w", err)
+	}
+
+	// Fetch data
+	args = append(args, f.Limit, f.Offset)
+	query := fmt.Sprintf(
+		"SELECT * FROM services %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d",
+		whereSQL, idx, idx+1,
+	)
+
+	var services []model.Service
+	if err := r.db.SelectContext(ctx, &services, query, args...); err != nil {
+		return nil, 0, fmt.Errorf("list services: %w", err)
+	}
+
+	return services, total, nil
+}
+
+func (r *ServiceRepository) GetBySlug(ctx context.Context, slug string) (*model.Service, error) {
+	var s model.Service
+	err := r.db.GetContext(ctx, &s, "SELECT * FROM services WHERE slug = $1", slug)
+	if err != nil {
+		return nil, fmt.Errorf("get service by slug: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *ServiceRepository) Create(ctx context.Context, in model.CreateServiceInput, createdBy uuid.UUID) (*model.Service, error) {
+	query := `
+		INSERT INTO services
+			(slug, name, description, team_id, created_by, repo_url, language, tier, docs_url, tags)
+		VALUES
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING *
+	`
+
+	tier := in.Tier
+	if tier == "" {
+		tier = model.TierThree
+	}
+
+	var s model.Service
+	err := r.db.GetContext(ctx, &s, query,
+		in.Slug, in.Name, in.Description, in.TeamID, createdBy,
+		in.RepoURL, in.Language, tier, in.DocsURL,
+		pq.Array(in.Tags),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("create service: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *ServiceRepository) Update(ctx context.Context, slug string, in model.CreateServiceInput) (*model.Service, error) {
+	query := `
+		UPDATE services SET
+			name        = $2,
+			description = $3,
+			team_id     = $4,
+			repo_url    = $5,
+			language    = $6,
+			tier        = $7,
+			docs_url    = $8,
+			tags        = $9,
+			updated_at  = NOW()
+		WHERE slug = $1
+		RETURNING *
+	`
+
+	var s model.Service
+	err := r.db.GetContext(ctx, &s, query,
+		slug, in.Name, in.Description, in.TeamID,
+		in.RepoURL, in.Language, in.Tier, in.DocsURL,
+		pq.Array(in.Tags),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("update service: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *ServiceRepository) Delete(ctx context.Context, slug string) error {
+	_, err := r.db.ExecContext(ctx,
+		"UPDATE services SET lifecycle = 'archived', updated_at = NOW() WHERE slug = $1", slug,
+	)
+	if err != nil {
+		return fmt.Errorf("delete service: %w", err)
+	}
+	return nil
+}
