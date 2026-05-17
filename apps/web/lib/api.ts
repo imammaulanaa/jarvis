@@ -2,13 +2,12 @@ import { auth } from "@/lib/auth"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
-// Server-side fetch (pakai di Server Components)
-export async function apiFetch(
+export async function apiFetch<T>(
   path: string,
   options?: RequestInit
-): Promise {
+): Promise<T> {
   const session = await auth()
-  const token   = session?.jarvisToken
+  const token = session?.jarvisToken
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
