@@ -30,10 +30,13 @@ func main() {
 	}
 
 	// Repositories
-	userRepo := repository.NewUserRepository(db)
+	userRepo    := repository.NewUserRepository(db)
+	serviceRepo := repository.NewServiceRepository(db)
+	auditRepo   := repository.NewAuditRepository(db)
 
 	// Handlers
-	authHandler := handler.NewAuthHandler(userRepo)
+	authHandler    := handler.NewAuthHandler(userRepo)
+	serviceHandler := handler.NewServiceHandler(serviceRepo, auditRepo)
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
 	app.Use(logger.New())
@@ -58,6 +61,14 @@ func main() {
 
 	// Auth routes — protected
 	authGroup.Get("/me", auth.Protected(), authHandler.Me)
+
+	// Service routes — semua protected
+	services := api.Group("/services", auth.Protected())
+	services.Get("/",          serviceHandler.List)
+	services.Post("/",         serviceHandler.Create)
+	services.Get("/:slug",     serviceHandler.Get)
+	services.Put("/:slug",     serviceHandler.Update)
+	services.Delete("/:slug",  serviceHandler.Delete)
 
 	port := os.Getenv("PORT")
 	if port == "" {

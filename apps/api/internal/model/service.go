@@ -1,9 +1,13 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type ServiceStatus    string
@@ -25,6 +29,34 @@ const (
 	TierThree ServiceTier = "tier-3"
 )
 
+// JSONB — custom type untuk handle PostgreSQL JSONB
+type JSONB map[string]interface{}
+
+func (j JSONB) Value() (driver.Value, error) {
+	if j == nil {
+		return "{}", nil
+	}
+	b, err := json.Marshal(j)
+	return string(b), err
+}
+
+func (j *JSONB) Scan(src interface{}) error {
+	if src == nil {
+		*j = JSONB{}
+		return nil
+	}
+	var b []byte
+	switch v := src.(type) {
+	case []byte:
+		b = v
+	case string:
+		b = []byte(v)
+	default:
+		return fmt.Errorf("unsupported type: %T", src)
+	}
+	return json.Unmarshal(b, j)
+}
+
 type Service struct {
 	ID          uuid.UUID        `db:"id"          json:"id"`
 	Slug        string           `db:"slug"         json:"slug"`
@@ -41,21 +73,23 @@ type Service struct {
 	Lifecycle ServiceLifecycle `db:"lifecycle"   json:"lifecycle"`
 	Status    ServiceStatus    `db:"status"      json:"status"`
 
+	// ← tambahkan ini
+	StatusCheckedAt *time.Time `db:"status_checked_at" json:"status_checked_at,omitempty"`
+
 	DashboardURL *string `db:"dashboard_url" json:"dashboard_url,omitempty"`
 	DocsURL      *string `db:"docs_url"      json:"docs_url,omitempty"`
 	OncallURL    *string `db:"oncall_url"    json:"oncall_url,omitempty"`
 
-	Tags     []string               `db:"tags"     json:"tags"`
-	Metadata map[string]interface{} `db:"metadata" json:"metadata,omitempty"`
+	Tags     pq.StringArray `db:"tags"     json:"tags"`
+	Metadata JSONB          `db:"metadata" json:"metadata,omitempty"`
 
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
-// CreateServiceInput — payload dari API request
 type CreateServiceInput struct {
-	Slug        string      `json:"slug"        validate:"required,slug"`
-	Name        string      `json:"name"        validate:"required,min=2"`
+	Slug        string      `json:"slug"        validate:"required"`
+	Name        string      `json:"name"        validate:"required"`
 	Description *string     `json:"description"`
 	TeamID      *uuid.UUID  `json:"team_id"`
 	Language    *string     `json:"language"`
