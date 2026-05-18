@@ -75,7 +75,7 @@ type Service struct {
 
 	// ← tambahkan ini
 	StatusCheckedAt *time.Time `db:"status_checked_at" json:"status_checked_at,omitempty"`
-
+	
 	DashboardURL *string `db:"dashboard_url" json:"dashboard_url,omitempty"`
 	DocsURL      *string `db:"docs_url"      json:"docs_url,omitempty"`
 	OncallURL    *string `db:"oncall_url"    json:"oncall_url,omitempty"`
