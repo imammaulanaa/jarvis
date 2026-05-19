@@ -26,6 +26,7 @@ type ListServicesFilter struct {
 	Status    string
 	Lifecycle string
 	Tier      string
+	Language  string  
 	Tags      []string
 	Limit     int
 	Offset    int
@@ -64,6 +65,11 @@ func (r *ServiceRepository) List(ctx context.Context, f ListServicesFilter) ([]m
 		args = append(args, f.Tier)
 		idx++
 	}
+	if f.Language != "" {
+    where = append(where, fmt.Sprintf("language = $%d", idx))
+    args = append(args, f.Language)
+    idx++
+}
 	if f.TeamID != nil {
 		where = append(where, fmt.Sprintf("team_id = $%d", idx))
 		args = append(args, f.TeamID)
