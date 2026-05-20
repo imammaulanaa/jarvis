@@ -30,6 +30,7 @@ func (h *ServiceHandler) List(c *fiber.Ctx) error {
 		Status:    c.Query("status"),
 		Lifecycle: c.Query("lifecycle", "active"),
 		Tier:      c.Query("tier"),
+		Language:  c.Query("language"),
 		Limit:     c.QueryInt("limit", 20),
 		Offset:    c.QueryInt("offset", 0),
 	}

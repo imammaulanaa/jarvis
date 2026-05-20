@@ -7,13 +7,36 @@ import EmptyState from "@/components/ui/EmptyState"
 import ServiceCard from "@/components/catalog/ServiceCard"
 import ServiceCardSkeleton from "@/components/catalog/ServiceCardSkeleton"
 import RegisterServiceModal from "@/components/catalog/RegisterServiceModal"
+import CatalogFilterBar from "@/components/catalog/CatalogFilterBar"
 import type { ServiceListResponse } from "@/lib/types"
 
-async function ServiceGrid() {
+interface PageProps {
+  searchParams: Promise<{
+    search?:   string
+    status?:   string
+    tier?:     string
+    language?: string
+    offset?:   string
+  }>
+}
+
+async function ServiceGrid({
+  searchParams,
+}: {
+  searchParams: Awaited<PageProps["searchParams"]>
+}) {
+  const params = new URLSearchParams()
+  params.set("limit", "50")
+  if (searchParams.search)   params.set("search",   searchParams.search)
+  if (searchParams.status)   params.set("status",   searchParams.status)
+  if (searchParams.tier)     params.set("tier",     searchParams.tier)
+  if (searchParams.language) params.set("language", searchParams.language)
+  if (searchParams.offset)   params.set("offset",   searchParams.offset)
+
   let data: ServiceListResponse
 
   try {
-    data = await apiFetch<ServiceListResponse>("/api/services?limit=50")
+    data = await apiFetch<ServiceListResponse>("/api/services?" + params.toString())
   } catch {
     return (
       <div className="text-sm text-red-400 bg-red-400/10 px-4 py-3 rounded-lg border border-red-400/20">
@@ -26,8 +49,8 @@ async function ServiceGrid() {
     return (
       <EmptyState
         icon={LayoutGrid}
-        title="Belum ada service terdaftar"
-        description="Register service pertama kamu atau import dari catalog-info.yaml di repo GitHub."
+        title="Tidak ada service ditemukan"
+        description="Coba ubah filter atau keyword pencarian."
       />
     )
   }
@@ -35,7 +58,7 @@ async function ServiceGrid() {
   return (
     <div>
       <p className="text-xs mb-4 font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
-        {data.total} service{data.total !== 1 ? "s" : ""} terdaftar
+        {data.total} service{data.total !== 1 ? "s" : ""} ditemukan
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {data.data.map(service => (
@@ -56,9 +79,10 @@ function ServiceGridSkeleton() {
   )
 }
 
-export default async function CatalogPage() {
-  const session = await auth()
-  const token   = session?.jarvisToken ?? ""
+export default async function CatalogPage({ searchParams }: PageProps) {
+  const session        = await auth()
+  const token          = session?.jarvisToken ?? ""
+  const resolvedParams = await searchParams
 
   return (
     <>
@@ -67,8 +91,14 @@ export default async function CatalogPage() {
         description="Semua microservices yang terdaftar di JARVIS"
         action={<RegisterServiceModal token={token} />}
       />
-      <Suspense fallback={<ServiceGridSkeleton />}>
-        <ServiceGrid />
+      <Suspense fallback={<div className="h-8" />}>
+        <CatalogFilterBar />
+      </Suspense>
+      <Suspense
+        fallback={<ServiceGridSkeleton />}
+        key={JSON.stringify(resolvedParams)}
+      >
+        <ServiceGrid searchParams={resolvedParams} />
       </Suspense>
     </>
   )

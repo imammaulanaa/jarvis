@@ -1,7 +1,10 @@
 import { auth, signOut } from "@/lib/auth"
-import { LogOut, Bell, Search } from "lucide-react"
+import { LogOut, Bell } from "lucide-react"
 import Image from "next/image"
+import { Suspense } from "react"
+import { Search } from "lucide-react"
 import ThemeToggle from "./ThemeToggle"
+import CatalogSearchBar from "@/components/catalog/CatalogSearchBar"
 import type { Session } from "next-auth"
 
 type JarvisSession = Session & {
@@ -12,12 +15,20 @@ type JarvisSession = Session & {
   }
 }
 
+type JarvisUser = {
+  avatar_url?: string
+  username?: string
+  name?: string
+  image?: string
+  email?: string
+}
+
 export default async function Topbar() {
   const session = (await auth()) as JarvisSession | null
-  const user = session?.user
+  const u = session?.user as JarvisUser | undefined
 
-  const avatarUrl   = user?.avatar_url ?? null
-  const displayName = user?.name ?? user?.username ?? "Unknown"
+  const avatarUrl   = u?.avatar_url ?? u?.image ?? null
+  const displayName = u?.name ?? u?.username ?? "Unknown"
   const role        = session?.role ?? "member"
 
   return (
@@ -28,22 +39,20 @@ export default async function Topbar() {
         borderColor: "var(--border)",
       }}
     >
-      {/* Left — search bar */}
-      <div
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border w-56 cursor-pointer"
-        style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
-      >
-        <Search size={13} style={{ color: "var(--text-muted)" }} />
-        <span className="text-xs font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
-          Search services...
-        </span>
-        <span
-          className="ml-auto text-[10px] px-1.5 py-0.5 rounded font-mono-jarvis"
-          style={{ background: "var(--bg-primary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}
+      {/* Left — search */}
+      <Suspense fallback={
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border w-64"
+          style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
         >
-          {"⌘K"}
-        </span>
-      </div>
+          <Search size={13} style={{ color: "var(--text-muted)" }} />
+          <span className="text-xs font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
+            Search services...
+          </span>
+        </div>
+      }>
+        <CatalogSearchBar />
+      </Suspense>
 
       {/* Right */}
       <div className="flex items-center gap-2">
