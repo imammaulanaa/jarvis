@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutGrid, Rocket, Settings, Wand2, Activity, ChevronRight, Terminal } from "lucide-react"
+import { LayoutGrid, Rocket, Settings, Wand2, ChevronRight, Terminal, Users } from "lucide-react"
 import { cn } from "@/lib/cn"
 
 const NAV_ITEMS = [

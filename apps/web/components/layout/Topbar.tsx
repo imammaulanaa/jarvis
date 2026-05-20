@@ -15,9 +15,17 @@ type JarvisSession = Session & {
   }
 }
 
+type JarvisUser = {
+  avatar_url?: string
+  username?: string
+  name?: string
+  image?: string
+  email?: string
+}
+
 export default async function Topbar() {
   const session = (await auth()) as JarvisSession | null
-  const u = session?.user as any
+  const u = session?.user as JarvisUser | undefined
 
   const avatarUrl   = u?.avatar_url ?? u?.image ?? null
   const displayName = u?.name ?? u?.username ?? "Unknown"
