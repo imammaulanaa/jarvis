@@ -16,6 +16,7 @@ interface PageProps {
     status?:   string
     tier?:     string
     language?: string
+    tags?:     string
     offset?:   string
   }>
 }
@@ -31,6 +32,7 @@ async function ServiceGrid({
   if (searchParams.status)   params.set("status",   searchParams.status)
   if (searchParams.tier)     params.set("tier",     searchParams.tier)
   if (searchParams.language) params.set("language", searchParams.language)
+  if (searchParams.tags)     params.set("tags",     searchParams.tags)
   if (searchParams.offset)   params.set("offset",   searchParams.offset)
 
   let data: ServiceListResponse
