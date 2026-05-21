@@ -33,10 +33,12 @@ func main() {
 	userRepo    := repository.NewUserRepository(db)
 	serviceRepo := repository.NewServiceRepository(db)
 	auditRepo   := repository.NewAuditRepository(db)
+	teamRepo := repository.NewTeamRepository(db)
 
 	// Handlers
 	authHandler    := handler.NewAuthHandler(userRepo)
 	serviceHandler := handler.NewServiceHandler(serviceRepo, auditRepo)
+	teamHandler := handler.NewTeamHandler(teamRepo, auditRepo)
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
 	app.Use(logger.New())
@@ -69,6 +71,14 @@ func main() {
 	services.Get("/:slug",     serviceHandler.Get)
 	services.Put("/:slug",     serviceHandler.Update)
 	services.Delete("/:slug",  serviceHandler.Delete)
+
+	// Teams routes — semua protected
+	teams := api.Group("/teams", auth.Protected())
+	teams.Get("/",                          teamHandler.List)
+	teams.Post("/",                         teamHandler.Create)
+	teams.Get("/:slug",                     teamHandler.Get)
+	teams.Post("/:slug/members",            teamHandler.AddMember)
+	teams.Delete("/:slug/members/:userID",  teamHandler.RemoveMember)
 
 	port := os.Getenv("PORT")
 	if port == "" {

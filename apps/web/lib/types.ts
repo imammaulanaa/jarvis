@@ -41,3 +41,33 @@ export interface CreateServiceInput {
   docs_url?:   string
   tags:        string[]
 }
+
+export interface Team {
+  id:           string
+  slug:         string
+  name:         string
+  description?: string
+  created_at:   string
+  updated_at:   string
+}
+
+export interface TeamMember {
+  id:         string
+  github_id:  number
+  username:   string
+  email:      string
+  name?:      string
+  avatar_url?: string
+  role:       string
+}
+
+export interface TeamDetail {
+  team:     Team
+  members:  TeamMember[]
+  services: Service[]
+}
+
+export interface TeamListResponse {
+  data:  Team[]
+  total: number
+}
