@@ -121,6 +121,41 @@ func (h *ServiceHandler) Update(c *fiber.Ctx) error {
 	return c.JSON(svc)
 }
 
+// PATCH /api/services/:slug/status
+func (h *ServiceHandler) UpdateStatus(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	var body struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	valid := map[string]bool{
+		"healthy": true, "degraded": true, "down": true, "unknown": true,
+	}
+	if !valid[body.Status] {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "status must be: healthy, degraded, down, unknown",
+		})
+	}
+
+	svc, err := h.serviceRepo.UpdateStatus(c.Context(), slug, body.Status)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "failed to update status", "detail": err.Error()})
+	}
+
+	claims := auth.GetUser(c)
+	_ = h.auditRepo.Log(c.Context(), &claims.UserID,
+		"service.status_updated", "service", &svc.ID,
+		fiber.Map{"slug": slug, "status": body.Status, "message": body.Message},
+	)
+
+	return c.JSON(svc)
+}
+
 // DELETE /api/services/:slug
 func (h *ServiceHandler) Delete(c *fiber.Ctx) error {
 	slug := c.Params("slug")
