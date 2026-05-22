@@ -71,6 +71,7 @@ func main() {
 	services.Get("/:slug",     serviceHandler.Get)
 	services.Put("/:slug",     serviceHandler.Update)
 	services.Delete("/:slug",  serviceHandler.Delete)
+	services.Patch("/:slug/status", serviceHandler.UpdateStatus)
 
 	// Teams routes — semua protected
 	teams := api.Group("/teams", auth.Protected())
@@ -85,6 +86,6 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("🚀 JARVIS API running on :%s", port)
+	log.Printf("JARVIS API running on :%s", port)
 	log.Fatal(app.Listen(":" + port))
 }

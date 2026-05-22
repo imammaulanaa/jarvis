@@ -168,6 +168,22 @@ func (r *ServiceRepository) Update(ctx context.Context, slug string, in model.Cr
 	return &s, nil
 }
 
+func (r *ServiceRepository) UpdateStatus(ctx context.Context, slug, status string) (*model.Service, error) {
+	var s model.Service
+	err := r.db.GetContext(ctx, &s, `
+		UPDATE services SET
+			status            = $2,
+			status_checked_at = NOW(),
+			updated_at        = NOW()
+		WHERE slug = $1
+		RETURNING *
+	`, slug, status)
+	if err != nil {
+		return nil, fmt.Errorf("update service status: %w", err)
+	}
+	return &s, nil
+}
+
 func (r *ServiceRepository) Delete(ctx context.Context, slug string) error {
 	_, err := r.db.ExecContext(ctx,
 		"UPDATE services SET lifecycle = 'archived', updated_at = NOW() WHERE slug = $1", slug,

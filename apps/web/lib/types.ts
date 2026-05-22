@@ -3,25 +3,26 @@ export type ServiceLifecycle = "active" | "deprecated" | "archived"
 export type ServiceTier      = "tier-1" | "tier-2" | "tier-3"
 
 export interface Service {
-  id:               string
-  slug:             string
-  name:             string
-  description?:     string
-  team_id?:         string
-  created_by?:      string
-  repo_url?:        string
-  repo_name?:       string
-  language?:        string
-  tier:             ServiceTier
-  lifecycle:        ServiceLifecycle
-  status:           ServiceStatus
+  id:                 string
+  slug:               string
+  name:               string
+  description?:       string
+  team_id?:           string
+  created_by?:        string
+  repo_url?:          string
+  repo_name?:         string
+  language?:          string
+  tier:               ServiceTier
+  lifecycle:          ServiceLifecycle
+  status:             ServiceStatus
   status_checked_at?: string
-  dashboard_url?:   string
-  docs_url?:        string
-  oncall_url?:      string
-  tags:             string[]
-  created_at:       string
-  updated_at:       string
+  dashboard_url?:     string
+  docs_url?:          string
+  oncall_url?:        string
+  tags:               string[]
+  metadata?:          Record<string, unknown>
+  created_at:         string
+  updated_at:         string
 }
 
 export interface ServiceListResponse {
@@ -32,14 +33,14 @@ export interface ServiceListResponse {
 }
 
 export interface CreateServiceInput {
-  slug:        string
-  name:        string
+  slug:         string
+  name:         string
   description?: string
-  language?:   string
-  tier:        ServiceTier
-  repo_url?:   string
-  docs_url?:   string
-  tags:        string[]
+  language?:    string
+  tier:         ServiceTier
+  repo_url?:    string
+  docs_url?:    string
+  tags:         string[]
 }
 
 export interface Team {
@@ -52,13 +53,13 @@ export interface Team {
 }
 
 export interface TeamMember {
-  id:         string
-  github_id:  number
-  username:   string
-  email:      string
-  name?:      string
+  id:          string
+  github_id:   number
+  username:    string
+  email:       string
+  name?:       string
   avatar_url?: string
-  role:       string
+  role:        string
 }
 
 export interface TeamDetail {
