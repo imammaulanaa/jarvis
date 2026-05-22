@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { GitBranch, ExternalLink, Tag } from "lucide-react"
 import { cn } from "@/lib/cn"
 import type { Service } from "@/lib/types"
@@ -29,8 +32,9 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service }: ServiceCardProps) {
-  const status   = STATUS_CONFIG[service.status] ?? STATUS_CONFIG.unknown
-  const tier     = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
+  const router    = useRouter()
+  const status    = STATUS_CONFIG[service.status] ?? STATUS_CONFIG.unknown
+  const tier      = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
   const langColor = service.language
     ? (LANG_COLORS[service.language] ?? "text-gray-400")
     : "text-gray-500"
@@ -64,32 +68,36 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         </div>
 
         {/* Description */}
-        {service.description && (
+        {service.description ? (
           <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "var(--text-secondary)" }}>
             {service.description}
           </p>
-        )}
+        ) : null}
 
         {/* Tier + Language */}
         <div className="flex items-center gap-2">
           <span className={cn("text-[11px] font-medium px-2 py-0.5 rounded-md border", tier.color, tier.bg, tier.border)}>
             {tier.label}
           </span>
-          {service.language && (
+          {service.language ? (
             <span className={"text-[11px] font-medium font-mono-jarvis " + langColor}>
               {service.language}
             </span>
-          )}
+          ) : null}
         </div>
 
-        {/* Tags */}
-        {service.tags && service.tags.length > 0 && (
+        {/* Tags — clickable */}
+        {service.tags && service.tags.length > 0 ? (
           <div className="flex items-center gap-1.5 flex-wrap">
             <Tag size={10} style={{ color: "var(--text-muted)" }} />
             {service.tags.slice(0, 3).map(tag => (
-              <span
+              <button
                 key={tag}
-                className="text-[10px] px-1.5 py-0.5 rounded font-mono-jarvis"
+                onClick={e => {
+                  e.preventDefault()
+                  router.push("/catalog?tags=" + tag)
+                }}
+                className="text-[10px] px-1.5 py-0.5 rounded font-mono-jarvis transition-colors hover:border-sky-500/50 hover:text-sky-400"
                 style={{
                   background: "var(--bg-primary)",
                   color: "var(--text-muted)",
@@ -97,15 +105,15 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 }}
               >
                 {tag}
-              </span>
+              </button>
             ))}
-            {service.tags.length > 3 && (
+            {service.tags.length > 3 ? (
               <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                 +{service.tags.length - 3}
               </span>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
 
         {/* Bottom — repo */}
         <div
