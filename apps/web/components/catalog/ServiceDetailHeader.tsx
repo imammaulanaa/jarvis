@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { ArrowLeft, GitBranch, BookOpen, ExternalLink, Trash2 } from "lucide-react"
 import { cn } from "@/lib/cn"
+import EditServiceModal from "./EditServiceModal"
+import StatusUpdateButton from "./StatusUpdateButton"
 import type { Service } from "@/lib/types"
 
 const STATUS_CONFIG = {
@@ -18,13 +20,14 @@ const TIER_CONFIG = {
 
 interface Props {
   service: Service
+  token:   string
 }
 
-export default function ServiceDetailHeader({ service }: Props) {
-  const status = STATUS_CONFIG[service.status] ?? STATUS_CONFIG.unknown
-  const tier   = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
-  const repoUrl   = service.repo_url   ?? null
-  const docsUrl   = service.docs_url   ?? null
+export default function ServiceDetailHeader({ service, token }: Props) {
+  const status  = STATUS_CONFIG[service.status] ?? STATUS_CONFIG.unknown
+  const tier    = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
+  const repoUrl = service.repo_url ?? null
+  const docsUrl = service.docs_url ?? null
 
   return (
     <div>
@@ -60,12 +63,19 @@ export default function ServiceDetailHeader({ service }: Props) {
             ) : null}
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border",
-                status.bg, status.border
-              )}>
-                <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", status.dot)} />
-                <span className={status.text}>{status.label}</span>
+              <div>
+                <div className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border",
+                  status.bg, status.border
+                )}>
+                  <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", status.dot)} />
+                  <span className={status.text}>{status.label}</span>
+                </div>
+                {service.status_checked_at ? (
+                  <p className="text-[10px] mt-1 font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
+                    checked {new Date(service.status_checked_at).toLocaleTimeString("id-ID")}
+                  </p>
+                ) : null}
               </div>
 
               <div className={cn(
@@ -97,6 +107,12 @@ export default function ServiceDetailHeader({ service }: Props) {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <StatusUpdateButton
+              slug={service.slug}
+              currentStatus={service.status}
+              token={token}
+            />
+
             {repoUrl ? (
               
               <a  href={repoUrl}
@@ -124,6 +140,8 @@ export default function ServiceDetailHeader({ service }: Props) {
                 <ExternalLink size={11} />
               </a>
             ) : null}
+
+            <EditServiceModal service={service} token={token} />
 
             <button
               className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-red-500/40 hover:text-red-400"

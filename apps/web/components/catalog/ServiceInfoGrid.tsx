@@ -1,8 +1,8 @@
-import { Calendar, Link2, Activity, Layers } from "lucide-react"
+import { Calendar, Link2, Activity, Layers, Clock } from "lucide-react"
 import type { Service } from "@/lib/types"
 
 interface InfoItemProps {
-  icon: React.ReactNode
+  icon:  React.ReactNode
   label: string
   value: React.ReactNode
 }
@@ -35,7 +35,9 @@ export default function ServiceInfoGrid({ service }: Props) {
   const updatedAt = new Date(service.updated_at).toLocaleDateString("id-ID", {
     day: "numeric", month: "long", year: "numeric",
   })
-
+  const checkedAt    = service.status_checked_at
+    ? new Date(service.status_checked_at).toLocaleString("id-ID")
+    : null
   const dashboardUrl = service.dashboard_url ?? null
   const oncallUrl    = service.oncall_url    ?? null
 
@@ -74,13 +76,20 @@ export default function ServiceInfoGrid({ service }: Props) {
           label="Last Updated"
           value={updatedAt}
         />
+        {checkedAt ? (
+          <InfoItem
+            icon={<Clock size={11} />}
+            label="Status Checked"
+            value={<span className="font-mono-jarvis text-xs">{checkedAt}</span>}
+          />
+        ) : null}
         {dashboardUrl ? (
           <InfoItem
             icon={<Link2 size={11} />}
             label="Dashboard"
             value={
               
-              <a href={dashboardUrl}
+              <a  href={dashboardUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sky-400 hover:underline text-xs font-mono-jarvis truncate block"
