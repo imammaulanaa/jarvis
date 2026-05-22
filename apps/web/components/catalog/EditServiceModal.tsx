@@ -1,84 +1,84 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { X, Plus, Loader2 } from "lucide-react"
+import { X, Save, Loader2, Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 import TagInput from "./TagInput"
-import type { ServiceTier } from "@/lib/types"
+import type { Service, ServiceTier } from "@/lib/types"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
 interface Props {
-  token: string
+  service: Service
+  token:   string
 }
 
-export default function RegisterServiceModal({ token }: Props) {
+export default function EditServiceModal({ service, token }: Props) {
   const [open, setOpen]              = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError]            = useState("")
   const router                       = useRouter()
 
   const [form, setForm] = useState({
-    slug:        "",
-    name:        "",
-    description: "",
-    language:    "",
-    tier:        "tier-3" as ServiceTier,
-    repo_url:    "",
-    tags:        [] as string[],
+    name:        service.name,
+    description: service.description ?? "",
+    language:    service.language    ?? "",
+    tier:        service.tier        as ServiceTier,
+    repo_url:    service.repo_url    ?? "",
+    docs_url:    service.docs_url    ?? "",
+    tags:        service.tags        ?? [] as string[],
   })
 
   const handleSubmit = async () => {
     setError("")
-    if (!form.slug || !form.name) {
-      setError("Slug and name are required")
+    if (!form.name) {
+      setError("Name is required")
       return
     }
     startTransition(async () => {
       try {
-        const res = await fetch(API_URL + "/api/services", {
-          method:  "POST",
+        const res = await fetch(API_URL + "/api/services/" + service.slug, {
+          method: "PUT",
           headers: {
             "Content-Type":  "application/json",
             "Authorization": "Bearer " + token,
           },
           body: JSON.stringify({
-            ...form,
-            tags: form.tags,
+            slug:        service.slug,
+            name:        form.name,
+            description: form.description || undefined,
+            language:    form.language    || undefined,
+            tier:        form.tier,
+            repo_url:    form.repo_url    || undefined,
+            docs_url:    form.docs_url    || undefined,
+            tags:        form.tags,
           }),
         })
         const data = await res.json()
         if (!res.ok) {
-          setError((data as { error?: string }).error ?? "Failed to create service")
+          setError((data as { error?: string }).error ?? "Failed to update service")
           return
         }
         setOpen(false)
-        setForm({
-          slug: "", name: "", description: "",
-          language: "", tier: "tier-3", repo_url: "", tags: [],
-        })
         router.refresh()
       } catch {
-        setError("Network error — is the API running?")
+        setError("Network error")
       }
     })
   }
 
   const inputClass = "w-full px-3 py-2 rounded-lg border text-sm outline-none focus:border-sky-500 transition-colors"
-  const inputStyle = {
-    background: "var(--bg-primary)",
-    borderColor: "var(--border)",
-    color: "var(--text-primary)",
-  }
+  const inputStyle = { background: "var(--bg-primary)", borderColor: "var(--border)", color: "var(--text-primary)" }
 
   return (
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium rounded-lg transition-colors"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-sky-500/40 hover:text-sky-400"
+        style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
       >
-        <Plus size={15} />
-        Register Service
+        <Pencil size={13} />
+        Edit
       </button>
 
       {open ? (
@@ -89,16 +89,16 @@ export default function RegisterServiceModal({ token }: Props) {
             onClick={() => setOpen(false)}
           />
           <div
-            className="relative w-full max-w-md rounded-2xl border p-6 flex flex-col gap-4 shadow-2xl"
+            className="relative w-full max-w-lg rounded-2xl border p-6 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto"
             style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>
-                  Register Service
+                  Edit Service
                 </h2>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                  Add a new service to JARVIS catalog
+                <p className="text-xs mt-0.5 font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
+                  {service.slug}
                 </p>
               </div>
               <button
@@ -111,35 +111,16 @@ export default function RegisterServiceModal({ token }: Props) {
             </div>
 
             <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>
-                    Name *
-                  </label>
-                  <input
-                    className={inputClass}
-                    style={inputStyle}
-                    placeholder="Payment Service"
-                    value={form.name}
-                    onChange={e => {
-                      const name = e.target.value
-                      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-                      setForm(f => ({ ...f, name, slug }))
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>
-                    Slug *
-                  </label>
-                  <input
-                    className={inputClass + " font-mono-jarvis"}
-                    style={inputStyle}
-                    placeholder="payment-service"
-                    value={form.slug}
-                    onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
-                  />
-                </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>
+                  Name *
+                </label>
+                <input
+                  className={inputClass}
+                  style={inputStyle}
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                />
               </div>
 
               <div>
@@ -149,7 +130,6 @@ export default function RegisterServiceModal({ token }: Props) {
                 <textarea
                   className={inputClass}
                   style={{ ...inputStyle, resize: "none" }}
-                  placeholder="What does this service do?"
                   rows={2}
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -205,6 +185,19 @@ export default function RegisterServiceModal({ token }: Props) {
 
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>
+                  Docs URL
+                </label>
+                <input
+                  className={inputClass + " font-mono-jarvis"}
+                  style={inputStyle}
+                  placeholder="https://docs.company.com/service"
+                  value={form.docs_url}
+                  onChange={e => setForm(f => ({ ...f, docs_url: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>
                   Tags
                   <span className="ml-1 font-normal" style={{ color: "var(--text-muted)" }}>
                     (Enter atau koma untuk tambah)
@@ -213,7 +206,6 @@ export default function RegisterServiceModal({ token }: Props) {
                 <TagInput
                   tags={form.tags}
                   onChange={tags => setForm(f => ({ ...f, tags }))}
-                  placeholder="payment, critical..."
                 />
               </div>
             </div>
@@ -237,8 +229,8 @@ export default function RegisterServiceModal({ token }: Props) {
                 disabled={isPending}
                 className="flex-1 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
-                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                {isPending ? "Registering..." : "Register Service"}
+                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                {isPending ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>

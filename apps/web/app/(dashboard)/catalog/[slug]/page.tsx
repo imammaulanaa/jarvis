@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { Rocket, Clock } from "lucide-react"
+import { auth } from "@/lib/auth"
 import { apiFetch } from "@/lib/api"
 import ServiceDetailHeader from "@/components/catalog/ServiceDetailHeader"
 import ServiceInfoGrid from "@/components/catalog/ServiceInfoGrid"
@@ -11,6 +12,8 @@ interface Props {
 
 export default async function ServiceDetailPage({ params }: Props) {
   const { slug } = await params
+  const session  = await auth()
+  const token    = session?.jarvisToken ?? ""
 
   let service: Service
   try {
@@ -21,7 +24,7 @@ export default async function ServiceDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-5xl">
-      <ServiceDetailHeader service={service} />
+      <ServiceDetailHeader service={service} token={token} />
       <ServiceInfoGrid service={service} />
 
       {/* Deployment History */}
@@ -41,7 +44,6 @@ export default async function ServiceDetailPage({ params }: Props) {
             Deploy
           </button>
         </div>
-
         <div className="flex flex-col items-center py-10 gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"

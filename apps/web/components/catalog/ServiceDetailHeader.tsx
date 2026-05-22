@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowLeft, GitBranch, BookOpen, ExternalLink, Trash2 } from "lucide-react"
 import { cn } from "@/lib/cn"
+import EditServiceModal from "./EditServiceModal"
 import type { Service } from "@/lib/types"
 
 const STATUS_CONFIG = {
@@ -18,13 +19,14 @@ const TIER_CONFIG = {
 
 interface Props {
   service: Service
+  token:   string
 }
 
-export default function ServiceDetailHeader({ service }: Props) {
-  const status = STATUS_CONFIG[service.status] ?? STATUS_CONFIG.unknown
-  const tier   = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
-  const repoUrl   = service.repo_url   ?? null
-  const docsUrl   = service.docs_url   ?? null
+export default function ServiceDetailHeader({ service, token }: Props) {
+  const status  = STATUS_CONFIG[service.status] ?? STATUS_CONFIG.unknown
+  const tier    = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
+  const repoUrl = service.repo_url ?? null
+  const docsUrl = service.docs_url ?? null
 
   return (
     <div>
@@ -124,6 +126,8 @@ export default function ServiceDetailHeader({ service }: Props) {
                 <ExternalLink size={11} />
               </a>
             ) : null}
+
+            <EditServiceModal service={service} token={token} />
 
             <button
               className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-red-500/40 hover:text-red-400"
