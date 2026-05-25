@@ -1,0 +1,26 @@
+apiVersion: jarvis.io/v1
+kind: Service
+
+metadata:
+  name: Payment Service
+  slug: payment-service
+
+spec:
+  description: "Handles all payment transactions including cards and e-wallets"
+  language: Go
+  tier: tier-1
+  lifecycle: active
+
+  repo_url:      https://github.com/org/payment-service
+  docs_url:      https://docs.internal/payment-service
+  dashboard_url: https://grafana.internal/d/payment
+  oncall_url:    https://pagerduty.com/payment-oncall
+
+  owner:
+    team: platform-team
+
+  tags:
+    - payment
+    - critical
+    - pci-dss
+    - tier-1
