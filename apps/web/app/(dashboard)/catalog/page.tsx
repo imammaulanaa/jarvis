@@ -7,6 +7,7 @@ import EmptyState from "@/components/ui/EmptyState"
 import ServiceCard from "@/components/catalog/ServiceCard"
 import ServiceCardSkeleton from "@/components/catalog/ServiceCardSkeleton"
 import RegisterServiceModal from "@/components/catalog/RegisterServiceModal"
+import ImportServiceModal from "@/components/catalog/ImportServiceModal"
 import CatalogFilterBar from "@/components/catalog/CatalogFilterBar"
 import type { ServiceListResponse } from "@/lib/types"
 
@@ -41,7 +42,7 @@ async function ServiceGrid({
     data = await apiFetch<ServiceListResponse>("/api/services?" + params.toString())
   } catch {
     return (
-      <div className="text-sm text-red-400 bg-red-400/10 px-4 py-3 rounded-lg border border-red-400/20">
+      <div className="text-sm text-red-400 bg-red-400/10 px-4 py-3 rounded-xl border border-red-400/20">
         Failed to load services — is the API running?
       </div>
     )
@@ -91,7 +92,12 @@ export default async function CatalogPage({ searchParams }: PageProps) {
       <PageHeader
         title="Service Catalog"
         description="Semua microservices yang terdaftar di JARVIS"
-        action={<RegisterServiceModal token={token} />}
+        action={
+          <div className="flex items-center gap-2">
+            <ImportServiceModal token={token} />
+            <RegisterServiceModal token={token} />
+          </div>
+        }
       />
       <Suspense fallback={<div className="h-8" />}>
         <CatalogFilterBar />

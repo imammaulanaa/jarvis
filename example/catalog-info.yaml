@@ -1,0 +1,22 @@
+apiVersion: jarvis.io/v1
+kind: Service
+
+metadata:
+  name: Example Service
+  slug: example-service
+
+spec:
+  description: "Contoh catalog-info.yaml untuk di-taruh di root repo"
+  language: Go
+  tier: tier-2
+  lifecycle: active
+
+  repo_url: https://github.com/imammaulanaa/jarvis
+  docs_url: https://docs.internal/example-service
+
+  owner:
+    team: platform-team
+
+  tags:
+    - example
+    - backend
