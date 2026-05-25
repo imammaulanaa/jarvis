@@ -1,13 +1,39 @@
-import { notFound } from "next/navigation"
+import { Suspense } from "react"
 import { Rocket, Clock } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { apiFetch } from "@/lib/api"
 import ServiceDetailHeader from "@/components/catalog/ServiceDetailHeader"
 import ServiceInfoGrid from "@/components/catalog/ServiceInfoGrid"
+import GitHubRepoCard from "@/components/catalog/GitHubRepoCard"
 import type { Service } from "@/lib/types"
 
 interface Props {
   params: Promise<{ slug: string }>
+}
+
+function GitHubCardSkeleton() {
+  return (
+    <div
+      className="rounded-xl border p-5 mb-6 animate-pulse"
+      style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+    >
+      <div className="flex justify-between mb-4">
+        <div className="h-4 w-32 rounded" style={{ background: "var(--border)" }} />
+        <div className="h-4 w-24 rounded" style={{ background: "var(--border)" }} />
+      </div>
+      <div
+        className="flex gap-5 pb-4 mb-4 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-3 w-16 rounded" style={{ background: "var(--border)" }} />
+        ))}
+      </div>
+      <div className="h-3 w-48 rounded mb-3" style={{ background: "var(--border)" }} />
+      <div className="h-3 w-full rounded mb-2" style={{ background: "var(--border)" }} />
+      <div className="h-3 w-3/4 rounded" style={{ background: "var(--border)" }} />
+    </div>
+  )
 }
 
 export default async function ServiceDetailPage({ params }: Props) {
@@ -19,13 +45,21 @@ export default async function ServiceDetailPage({ params }: Props) {
   try {
     service = await apiFetch<Service>("/api/services/" + slug)
   } catch {
+    const { notFound } = await import("next/navigation")
     notFound()
   }
 
   return (
     <div className="max-w-5xl">
-      <ServiceDetailHeader service={service} token={token} />
-      <ServiceInfoGrid service={service} />
+      <ServiceDetailHeader service={service!} token={token} />
+      <ServiceInfoGrid service={service!} />
+
+      {/* GitHub Repo Card */}
+      {service!.repo_url ? (
+        <Suspense fallback={<GitHubCardSkeleton />}>
+          <GitHubRepoCard repoUrl={service!.repo_url} />
+        </Suspense>
+      ) : null}
 
       {/* Deployment History */}
       <div
@@ -70,8 +104,8 @@ export default async function ServiceDetailPage({ params }: Props) {
         </h2>
         <div className="flex flex-col gap-2">
           {[
-            { action: "service.created", time: service.created_at },
-            { action: "service.updated", time: service.updated_at },
+            { action: "service.created", time: service!.created_at },
+            { action: "service.updated", time: service!.updated_at },
           ].map((log, i) => (
             <div
               key={i}
