@@ -40,6 +40,7 @@ func main() {
 	serviceHandler := handler.NewServiceHandler(serviceRepo, auditRepo)
 	importHandler := handler.NewImportHandler(serviceRepo, teamRepo, auditRepo)
 	teamHandler := handler.NewTeamHandler(teamRepo, auditRepo)
+	auditHandler := handler.NewAuditHandler(auditRepo, serviceRepo)
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
 	app.Use(logger.New())
@@ -57,6 +58,7 @@ func main() {
 	})
 
 	api := app.Group("/api")
+	api.Get("/audit-logs", auth.Protected(), auditHandler.ListGlobal)
 
 	// Auth routes — public
 	authGroup := api.Group("/auth")
@@ -74,6 +76,7 @@ func main() {
 	services.Delete("/:slug",  serviceHandler.Delete)
 	services.Patch("/:slug/status", serviceHandler.UpdateStatus)
 	services.Post("/import", importHandler.ImportYAML)
+	services.Get("/:slug/audit-logs", auditHandler.ListByService)
 
 	// Teams routes — semua protected
 	teams := api.Group("/teams", auth.Protected())

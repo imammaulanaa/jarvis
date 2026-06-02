@@ -72,3 +72,20 @@ export interface TeamListResponse {
   data:  Team[]
   total: number
 }
+
+export interface AuditLogEntry {
+  id:            string
+  user_id?:      string
+  username?:     string
+  avatar_url?:   string
+  action:        string
+  resource_type: string
+  resource_id?:  string
+  metadata?:     Record<string, unknown>
+  created_at:    string
+}
+
+export interface AuditLogResponse {
+  data:  AuditLogEntry[]
+  total: number
+}
