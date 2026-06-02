@@ -193,3 +193,25 @@ func (r *ServiceRepository) Delete(ctx context.Context, slug string) error {
 	}
 	return nil
 }
+
+func (r *ServiceRepository) SyncFromGitHub(
+	ctx context.Context,
+	slug, repoName, language string,
+) (*model.Service, error) {
+	var s model.Service
+
+	query := `
+		UPDATE services SET
+			repo_name  = CASE WHEN $2 != '' THEN $2 ELSE repo_name END,
+			language   = CASE WHEN $3 != '' THEN $3 ELSE language  END,
+			updated_at = NOW()
+		WHERE slug = $1
+		RETURNING *
+	`
+
+	err := r.db.GetContext(ctx, &s, query, slug, repoName, language)
+	if err != nil {
+		return nil, fmt.Errorf("sync github metadata: %w", err)
+	}
+	return &s, nil
+}

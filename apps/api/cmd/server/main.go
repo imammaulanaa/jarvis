@@ -41,6 +41,7 @@ func main() {
 	importHandler := handler.NewImportHandler(serviceRepo, teamRepo, auditRepo)
 	teamHandler := handler.NewTeamHandler(teamRepo, auditRepo)
 	auditHandler := handler.NewAuditHandler(auditRepo, serviceRepo)
+	githubHandler := handler.NewGitHubHandler(serviceRepo, auditRepo)
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
 	app.Use(logger.New())
@@ -77,6 +78,7 @@ func main() {
 	services.Patch("/:slug/status", serviceHandler.UpdateStatus)
 	services.Post("/import", importHandler.ImportYAML)
 	services.Get("/:slug/audit-logs", auditHandler.ListByService)
+	services.Post("/:slug/sync-github", githubHandler.SyncRepo)
 
 	// Teams routes — semua protected
 	teams := api.Group("/teams", auth.Protected())
