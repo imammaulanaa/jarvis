@@ -4,9 +4,10 @@ import { auth } from "@/lib/auth"
 import { apiFetch } from "@/lib/api"
 import ServiceDetailHeader from "@/components/catalog/ServiceDetailHeader"
 import ServiceInfoGrid from "@/components/catalog/ServiceInfoGrid"
+import SyncedMetadataCard from "@/components/catalog/SyncedMetadataCard"
 import GitHubRepoCard from "@/components/catalog/GitHubRepoCard"
 import AuditLogList from "@/components/catalog/AuditLogList"
-import type { Service, AuditLogResponse } from "@/lib/types"
+import type { Service, AuditLogResponse, GitHubMetadata } from "@/lib/types"
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -75,12 +76,17 @@ export default async function ServiceDetailPage({ params }: Props) {
     notFound()
   }
 
+  const ghMeta = (service!.metadata as { github?: GitHubMetadata } | undefined)?.github
+
   return (
     <div className="max-w-5xl">
       <ServiceDetailHeader service={service!} token={token} />
       <ServiceInfoGrid service={service!} />
 
-      {/* GitHub Repo Card */}
+      {/* Synced GitHub metadata (cached) */}
+      {ghMeta ? <SyncedMetadataCard meta={ghMeta} /> : null}
+
+      {/* GitHub Repo Card (live fetch) */}
       {service!.repo_url ? (
         <Suspense fallback={<GitHubCardSkeleton />}>
           <GitHubRepoCard repoUrl={service!.repo_url} />

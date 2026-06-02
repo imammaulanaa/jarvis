@@ -89,3 +89,19 @@ export interface AuditLogResponse {
   data:  AuditLogEntry[]
   total: number
 }
+
+export interface GitHubMetadata {
+  repo_name?:        string
+  description?:      string
+  language?:         string
+  default_branch?:   string
+  stars?:            number
+  forks?:            number
+  open_issues?:      number
+  contributors?:     number
+  last_commit_sha?:  string
+  last_commit_msg?:  string
+  last_commit_at?:   string
+  last_commit_by?:   string
+  synced_at?:        string
+}
