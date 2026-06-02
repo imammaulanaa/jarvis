@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"  
 	"fmt"
 	"strings"
 
@@ -212,6 +213,35 @@ func (r *ServiceRepository) SyncFromGitHub(
 	err := r.db.GetContext(ctx, &s, query, slug, repoName, language)
 	if err != nil {
 		return nil, fmt.Errorf("sync github metadata: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *ServiceRepository) SyncMetadata(
+	ctx context.Context,
+	slug, repoName, language string,
+	githubMeta interface{},
+) (*model.Service, error) {
+	metaJSON, err := json.Marshal(map[string]interface{}{
+		"github": githubMeta,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal metadata: %w", err)
+	}
+
+	var s model.Service
+	query := `
+		UPDATE services SET
+			repo_name  = CASE WHEN $2 != '' THEN $2 ELSE repo_name END,
+			language   = CASE WHEN $3 != '' THEN $3 ELSE language  END,
+			metadata   = COALESCE(metadata, '{}'::jsonb) || $4::jsonb,
+			updated_at = NOW()
+		WHERE slug = $1
+		RETURNING *
+	`
+	err = r.db.GetContext(ctx, &s, query, slug, repoName, language, metaJSON)
+	if err != nil {
+		return nil, fmt.Errorf("sync metadata: %w", err)
 	}
 	return &s, nil
 }
