@@ -3,6 +3,7 @@ import { ArrowLeft, GitBranch, BookOpen, ExternalLink, Trash2 } from "lucide-rea
 import { cn } from "@/lib/cn"
 import EditServiceModal from "./EditServiceModal"
 import StatusUpdateButton from "./StatusUpdateButton"
+import SyncGitHubButton from "./SyncGitHubButton"
 import type { Service } from "@/lib/types"
 
 const STATUS_CONFIG = {
@@ -33,7 +34,7 @@ export default function ServiceDetailHeader({ service, token }: Props) {
     <div>
       <Link
         href="/catalog"
-        className="inline-flex items-center gap-1.5 text-xs mb-6 transition-colors hover:text-sky-400"
+        className="inline-flex items-center gap-1.5 text-xs mb-6 transition-colors hover:text-[var(--accent)]"
         style={{ color: "var(--text-muted)" }}
       >
         <ArrowLeft size={13} />
@@ -42,10 +43,11 @@ export default function ServiceDetailHeader({ service, token }: Props) {
 
       <div
         className="rounded-2xl border p-6 mb-6"
-        style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+        style={{ background: "var(--bg-card)", borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}
       >
         <div className="flex items-start justify-between gap-4 flex-wrap">
 
+          {/* Left — name + badges */}
           <div className="flex flex-col gap-3">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
@@ -88,7 +90,7 @@ export default function ServiceDetailHeader({ service, token }: Props) {
               {service.language ? (
                 <div
                   className="px-3 py-1.5 rounded-lg text-xs font-medium font-mono-jarvis border"
-                  style={{ background: "var(--bg-primary)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
+                  style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", borderColor: "var(--border)" }}
                 >
                   {service.language}
                 </div>
@@ -98,7 +100,7 @@ export default function ServiceDetailHeader({ service, token }: Props) {
                 <span
                   key={tag}
                   className="px-2 py-1 rounded text-[11px] font-mono-jarvis"
-                  style={{ background: "var(--bg-primary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}
+                  style={{ background: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}
                 >
                   {tag}
                 </span>
@@ -106,6 +108,7 @@ export default function ServiceDetailHeader({ service, token }: Props) {
             </div>
           </div>
 
+          {/* Right — actions */}
           <div className="flex items-center gap-2 flex-wrap">
             <StatusUpdateButton
               slug={service.slug}
@@ -113,12 +116,18 @@ export default function ServiceDetailHeader({ service, token }: Props) {
               token={token}
             />
 
+            <SyncGitHubButton
+              slug={service.slug}
+              token={token}
+              hasRepo={!!repoUrl}
+            />
+
             {repoUrl ? (
               
-              <a  href={repoUrl}
+              <a href={repoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-sky-500/40 hover:text-sky-400"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
               >
                 <GitBranch size={13} />
@@ -129,10 +138,10 @@ export default function ServiceDetailHeader({ service, token }: Props) {
 
             {docsUrl ? (
               
-              <a  href={docsUrl}
+              <a href={docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-sky-500/40 hover:text-sky-400"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
               >
                 <BookOpen size={13} />
