@@ -20,7 +20,7 @@ async function ghFetch<T>(path: string): Promise<T | null> {
         "X-GitHub-Api-Version": "2022-11-28",
         ...(PAT ? { Authorization: "Bearer " + PAT } : {}),
       },
-      next: { revalidate: 300 },
+      next: { revalidate: 180 },
     })
     if (!res.ok) return null
     return res.json() as Promise<T>
@@ -92,4 +92,30 @@ export async function fetchRepoData(owner: string, repo: string): Promise<GitHub
     commit:   commitsData?.[0] ?? null,
     workflow: workflowData?.workflow_runs?.[0] ?? null,
   }
+}
+
+export interface GitHubLabel {
+  name:  string
+  color: string
+}
+
+export interface GitHubPRDetail {
+  number:      number
+  title:       string
+  html_url:    string
+  draft:       boolean
+  state:       string
+  created_at:  string
+  updated_at:  string
+  comments:    number
+  user:        { login: string; avatar_url: string }
+  labels:      GitHubLabel[]
+  requested_reviewers: { login: string; avatar_url: string }[]
+}
+
+export async function fetchPullRequests(owner: string, repo: string): Promise<GitHubPRDetail[]> {
+  const data = await ghFetch<GitHubPRDetail[]>(
+    `/repos/${owner}/${repo}/pulls?state=open&per_page=10&sort=created&direction=desc`
+  )
+  return data ?? []
 }

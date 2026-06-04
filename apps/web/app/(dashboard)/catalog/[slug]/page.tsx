@@ -6,6 +6,7 @@ import ServiceDetailHeader from "@/components/catalog/ServiceDetailHeader"
 import ServiceInfoGrid from "@/components/catalog/ServiceInfoGrid"
 import SyncedMetadataCard from "@/components/catalog/SyncedMetadataCard"
 import GitHubRepoCard from "@/components/catalog/GitHubRepoCard"
+import PullRequestsCard from "@/components/catalog/PullRequestsCard"
 import AuditLogList from "@/components/catalog/AuditLogList"
 import type { Service, AuditLogResponse, GitHubMetadata } from "@/lib/types"
 
@@ -35,6 +36,26 @@ function GitHubCardSkeleton() {
   )
 }
 
+function PRCardSkeleton() {
+  return (
+    <div
+      className="rounded-xl border p-5 mb-6 animate-pulse"
+      style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
+    >
+      <div className="h-4 w-40 rounded mb-4" style={{ background: "var(--border)" }} />
+      {[1, 2, 3].map(i => (
+        <div key={i} className="flex gap-3 mb-2 p-3 rounded-xl" style={{ background: "var(--bg-secondary)" }}>
+          <div className="w-7 h-7 rounded-full shrink-0" style={{ background: "var(--border)" }} />
+          <div className="flex-1">
+            <div className="h-3 w-3/4 rounded mb-1.5" style={{ background: "var(--border)" }} />
+            <div className="h-2.5 w-1/3 rounded" style={{ background: "var(--border)" }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AuditLogSkeleton() {
   return (
     <div className="flex flex-col gap-4 animate-pulse">
@@ -58,7 +79,7 @@ async function AuditLogSection({ slug }: { slug: string }) {
       "/api/services/" + slug + "/audit-logs?limit=20"
     )
   } catch {
-    // Silently fail — audit log tidak critical
+    // Silently fail
   }
   return <AuditLogList entries={logs.data ?? []} />
 }
@@ -86,10 +107,17 @@ export default async function ServiceDetailPage({ params }: Props) {
       {/* Synced GitHub metadata (cached) */}
       {ghMeta ? <SyncedMetadataCard meta={ghMeta} /> : null}
 
-      {/* GitHub Repo Card (live fetch) */}
+      {/* GitHub Repo Card (live) */}
       {service!.repo_url ? (
         <Suspense fallback={<GitHubCardSkeleton />}>
           <GitHubRepoCard repoUrl={service!.repo_url} />
+        </Suspense>
+      ) : null}
+
+      {/* Open PRs */}
+      {service!.repo_url ? (
+        <Suspense fallback={<PRCardSkeleton />}>
+          <PullRequestsCard repoUrl={service!.repo_url} />
         </Suspense>
       ) : null}
 
@@ -104,11 +132,7 @@ export default async function ServiceDetailPage({ params }: Props) {
           </h2>
           <button
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
-            style={{
-              background:  "var(--bg-secondary)",
-              color:       "var(--text-secondary)",
-              border:      "1px solid var(--border)",
-            }}
+            style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
           >
             <Rocket size={12} />
             Deploy
@@ -130,7 +154,7 @@ export default async function ServiceDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Recent Activity — real audit logs */}
+      {/* Recent Activity */}
       <div
         className="rounded-xl border p-5"
         style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
