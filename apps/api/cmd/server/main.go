@@ -62,6 +62,7 @@ func main() {
 
 	api := app.Group("/api")
 	api.Get("/audit-logs", auth.Protected(), auditHandler.ListGlobal)
+	api.Get("/github/rate-limit", auth.Protected(), githubHandler.RateLimit)
 
 	// Auth routes — public
 	authGroup := api.Group("/auth")
