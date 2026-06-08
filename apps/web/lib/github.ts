@@ -119,3 +119,47 @@ export async function fetchPullRequests(owner: string, repo: string): Promise<Gi
   )
   return data ?? []
 }
+
+export interface GitHubWorkflowRunDetail {
+  id:             number
+  name:           string
+  display_title:  string
+  status:         string
+  conclusion:     string | null
+  html_url:       string
+  event:          string
+  head_branch:    string
+  run_number:     number
+  created_at:     string
+  updated_at:     string
+  run_started_at: string
+  actor:          { login: string; avatar_url: string }
+  head_commit:    { message: string } | null
+}
+
+export async function fetchWorkflowRuns(owner: string, repo: string): Promise<GitHubWorkflowRunDetail[]> {
+  const data = await ghFetch<{ workflow_runs: GitHubWorkflowRunDetail[] }>(
+    `/repos/${owner}/${repo}/actions/runs?per_page=5`
+  )
+  return data?.workflow_runs ?? []
+}
+
+export interface GitHubRelease {
+  id:           number
+  tag_name:     string
+  name:         string | null
+  body:         string | null
+  html_url:     string
+  draft:        boolean
+  prerelease:   boolean
+  created_at:   string
+  published_at: string | null
+  author:       { login: string; avatar_url: string }
+}
+
+export async function fetchReleases(owner: string, repo: string): Promise<GitHubRelease[]> {
+  const data = await ghFetch<GitHubRelease[]>(
+    `/repos/${owner}/${repo}/releases?per_page=5`
+  )
+  return data ?? []
+}
