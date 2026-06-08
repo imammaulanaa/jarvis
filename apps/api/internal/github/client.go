@@ -71,6 +71,16 @@ type RepoInfo struct {
 	OpenIssues    int
 }
 
+type BranchProtection struct {
+	Protected            bool     `json:"protected"`
+	Branch               string   `json:"branch"`
+	RequiredReviews      int      `json:"required_reviews"`
+	RequireCodeOwner     bool     `json:"require_code_owner"`
+	RequiredStatusChecks []string `json:"required_status_checks"`
+	EnforceAdmins        bool     `json:"enforce_admins"`
+	AllowForcePush       bool     `json:"allow_force_push"`
+}
+
 func ParseURL(repoURL string) (owner, repo string, err error) {
 	repoURL = strings.TrimSuffix(repoURL, ".git")
 	parts := strings.Split(strings.TrimPrefix(repoURL, "https://github.com/"), "/")
@@ -183,4 +193,48 @@ func indexNewline(s string) int {
 		}
 	}
 	return -1
+}
+
+func (c *Client) CheckBranchProtection(ctx context.Context, owner, repo string) (*BranchProtection, error) {
+	r, resp, err := c.gh.Repositories.Get(ctx, owner, repo)
+	c.trackRateLimit(resp)
+	if err != nil {
+		return nil, fmt.Errorf("fetch repo: %w", err)
+	}
+	branch := r.GetDefaultBranch()
+
+	result := &BranchProtection{
+		Branch:               branch,
+		Protected:            false,
+		RequiredStatusChecks: []string{}, 
+	}
+
+	protection, resp2, err := c.gh.Repositories.GetBranchProtection(ctx, owner, repo, branch)
+	c.trackRateLimit(resp2)
+	if err != nil {
+		return result, nil
+	}
+
+	result.Protected = true
+
+	if protection.RequiredPullRequestReviews != nil {
+		result.RequiredReviews  = protection.RequiredPullRequestReviews.RequiredApprovingReviewCount
+		result.RequireCodeOwner = protection.RequiredPullRequestReviews.RequireCodeOwnerReviews
+	}
+
+	if protection.RequiredStatusChecks != nil && protection.RequiredStatusChecks.Checks != nil {
+		for _, check := range *protection.RequiredStatusChecks.Checks {
+			result.RequiredStatusChecks = append(result.RequiredStatusChecks, check.Context)
+		}
+	}
+
+	if protection.EnforceAdmins != nil {
+		result.EnforceAdmins = protection.EnforceAdmins.Enabled
+	}
+
+	if protection.AllowForcePushes != nil {
+		result.AllowForcePush = protection.AllowForcePushes.Enabled
+	}
+
+	return result, nil
 }

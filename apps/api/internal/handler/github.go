@@ -2,7 +2,7 @@ package handler
 
 import (
 	"time"  
-	
+
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/imammaulanaa/jarvis/api/internal/auth"
@@ -107,5 +107,52 @@ func (h *GitHubHandler) RateLimit(c *fiber.Ctx) error {
 		"used_percent":  usedPct,
 		"reset_at":      info.ResetAt,
 		"reset_in_secs": int(time.Until(info.ResetAt).Seconds()),
+	})
+}
+
+func (h *GitHubHandler) BranchProtection(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	svc, err := h.serviceRepo.GetBySlug(c.Context(), slug)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "service not found"})
+	}
+
+	repoURL := ""
+	if svc.RepoURL != nil {
+		repoURL = *svc.RepoURL
+	}
+	if repoURL == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "service has no repo_url"})
+	}
+
+	owner, repo, err := ghclient.ParseURL(repoURL)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid GitHub repo URL"})
+	}
+
+	protection, err := h.gh.CheckBranchProtection(c.Context(), owner, repo)
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{
+			"error":  "failed to check branch protection",
+			"detail": err.Error(),
+		})
+	}
+
+	risk := "low"
+	if !protection.Protected {
+		if svc.Tier == "tier-1" {
+			risk = "critical"
+		} else if svc.Tier == "tier-2" {
+			risk = "high"
+		} else {
+			risk = "medium"
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"protection": protection,
+		"tier":       svc.Tier,
+		"risk":       risk,
 	})
 }

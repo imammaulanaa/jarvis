@@ -84,6 +84,7 @@ func main() {
 	services.Post("/import", importHandler.ImportYAML)
 	services.Get("/:slug/audit-logs", auditHandler.ListByService)
 	services.Post("/:slug/sync-github", githubHandler.SyncRepo)
+	services.Get("/:slug/branch-protection", githubHandler.BranchProtection)
 
 	// Teams routes — semua protected
 	teams := api.Group("/teams", auth.Protected())
