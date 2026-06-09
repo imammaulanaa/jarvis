@@ -257,3 +257,32 @@ func (r *ServiceRepository) GetByRepoURL(ctx context.Context, repoURL string) (*
 	}
 	return &s, nil
 }
+
+func (r *ServiceRepository) SetK8sRef(
+	ctx context.Context,
+	slug, namespace, deployment string,
+) (*model.Service, error) {
+	k8sRef := map[string]string{
+		"namespace":  namespace,
+		"deployment": deployment,
+	}
+	metaJSON, err := json.Marshal(map[string]interface{}{
+		"k8s": k8sRef,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal k8s ref: %w", err)
+	}
+
+	var s model.Service
+	err = r.db.GetContext(ctx, &s, `
+		UPDATE services SET
+			metadata   = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+			updated_at = NOW()
+		WHERE slug = $1
+		RETURNING *
+	`, slug, metaJSON)
+	if err != nil {
+		return nil, fmt.Errorf("set k8s ref: %w", err)
+	}
+	return &s, nil
+}

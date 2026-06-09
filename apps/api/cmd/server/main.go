@@ -12,6 +12,7 @@ import (
 	"github.com/imammaulanaa/jarvis/api/internal/auth"
 	"github.com/imammaulanaa/jarvis/api/internal/database"
 	"github.com/imammaulanaa/jarvis/api/internal/handler"
+	"github.com/imammaulanaa/jarvis/api/internal/k8s"
 	"github.com/imammaulanaa/jarvis/api/internal/repository"
 )
 
@@ -29,20 +30,26 @@ func main() {
 		log.Fatalf("Migration error: %v", err)
 	}
 
-	// Repositories
 	userRepo    := repository.NewUserRepository(db)
 	serviceRepo := repository.NewServiceRepository(db)
 	auditRepo   := repository.NewAuditRepository(db)
-	teamRepo := repository.NewTeamRepository(db)
+	teamRepo    := repository.NewTeamRepository(db)
 
-	// Handlers
+	k8sClient, err := k8s.New()
+	if err != nil {
+		log.Printf("WARN: k8s client unavailable: %v", err)
+		log.Printf("      k8s endpoints will return 503. Continue without k8s.")
+		k8sClient = nil
+	}
+
 	authHandler    := handler.NewAuthHandler(userRepo)
 	serviceHandler := handler.NewServiceHandler(serviceRepo, auditRepo)
-	importHandler := handler.NewImportHandler(serviceRepo, teamRepo, auditRepo)
-	teamHandler := handler.NewTeamHandler(teamRepo, auditRepo)
-	auditHandler := handler.NewAuditHandler(auditRepo, serviceRepo)
-	githubHandler := handler.NewGitHubHandler(serviceRepo, auditRepo)
+	importHandler  := handler.NewImportHandler(serviceRepo, teamRepo, auditRepo)
+	teamHandler    := handler.NewTeamHandler(teamRepo, auditRepo)
+	auditHandler   := handler.NewAuditHandler(auditRepo, serviceRepo)
+	githubHandler  := handler.NewGitHubHandler(serviceRepo, auditRepo)
 	webhookHandler := handler.NewWebhookHandler(serviceRepo, auditRepo)
+	k8sHandler 	   := handler.NewK8sHandler(k8sClient, serviceRepo, auditRepo)
 
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
@@ -52,7 +59,6 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Authorization",
 	}))
 
-	// Public routes
 	app.Get("/health", func(c *fiber.Ctx) error {
 		if err := db.Ping(); err != nil {
 			return c.Status(503).JSON(fiber.Map{"status": "degraded"})
@@ -60,39 +66,41 @@ func main() {
 		return c.JSON(fiber.Map{"status": "ok", "app": "JARVIS"})
 	})
 
-	api := app.Group("/api")
-	api.Get("/audit-logs", auth.Protected(), auditHandler.ListGlobal)
-	api.Get("/github/rate-limit", auth.Protected(), githubHandler.RateLimit)
-
-	// Auth routes — public
-	authGroup := api.Group("/auth")
-	authGroup.Post("/github", authHandler.GithubLogin)
-
-	// Auth routes — protected
-	authGroup.Get("/me", auth.Protected(), authHandler.Me)
+	api := api_setup(app)
 
 	api.Post("/webhooks/github", webhookHandler.HandleGitHub)
 
-	// Service routes — semua protected
-	services := api.Group("/services", auth.Protected())
-	services.Get("/",          serviceHandler.List)
-	services.Post("/",         serviceHandler.Create)
-	services.Get("/:slug",     serviceHandler.Get)
-	services.Put("/:slug",     serviceHandler.Update)
-	services.Delete("/:slug",  serviceHandler.Delete)
-	services.Patch("/:slug/status", serviceHandler.UpdateStatus)
-	services.Post("/import", importHandler.ImportYAML)
-	services.Get("/:slug/audit-logs", auditHandler.ListByService)
-	services.Post("/:slug/sync-github", githubHandler.SyncRepo)
-	services.Get("/:slug/branch-protection", githubHandler.BranchProtection)
+	authGroup := api.Group("/auth")
+	authGroup.Post("/github", authHandler.GithubLogin)
+	authGroup.Get("/me", auth.Protected(), authHandler.Me)
 
-	// Teams routes — semua protected
+	api.Get("/audit-logs",       auth.Protected(), auditHandler.ListGlobal)
+	api.Get("/github/rate-limit", auth.Protected(), githubHandler.RateLimit)
+
+	services := api.Group("/services", auth.Protected())
+	services.Get("/",                       serviceHandler.List)
+	services.Post("/",                      serviceHandler.Create)
+	services.Post("/import",                importHandler.ImportYAML)
+	services.Get("/:slug",                  serviceHandler.Get)
+	services.Put("/:slug",                  serviceHandler.Update)
+	services.Patch("/:slug/status",         serviceHandler.UpdateStatus)
+	services.Delete("/:slug",               serviceHandler.Delete)
+	services.Get("/:slug/audit-logs",       auditHandler.ListByService)
+	services.Post("/:slug/sync-github",     githubHandler.SyncRepo)
+	services.Get("/:slug/branch-protection", githubHandler.BranchProtection)
+	services.Get("/:slug/deployment",       k8sHandler.GetServiceDeployment)
+	services.Post("/:slug/link-deployment", k8sHandler.LinkDeployment)
+
 	teams := api.Group("/teams", auth.Protected())
-	teams.Get("/",                          teamHandler.List)
-	teams.Post("/",                         teamHandler.Create)
-	teams.Get("/:slug",                     teamHandler.Get)
-	teams.Post("/:slug/members",            teamHandler.AddMember)
-	teams.Delete("/:slug/members/:userID",  teamHandler.RemoveMember)
+	teams.Get("/",                         teamHandler.List)
+	teams.Post("/",                        teamHandler.Create)
+	teams.Get("/:slug",                    teamHandler.Get)
+	teams.Post("/:slug/members",           teamHandler.AddMember)
+	teams.Delete("/:slug/members/:userID", teamHandler.RemoveMember)
+
+	k8sGroup := api.Group("/k8s", auth.Protected())
+	k8sGroup.Get("/health",     k8sHandler.Health)
+	k8sGroup.Get("/namespaces", k8sHandler.ListNamespaces)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -101,4 +109,8 @@ func main() {
 
 	log.Printf("JARVIS API running on :%s", port)
 	log.Fatal(app.Listen(":" + port))
+}
+
+func api_setup(app *fiber.App) fiber.Router {
+	return app.Group("/api")
 }
