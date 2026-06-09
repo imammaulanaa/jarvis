@@ -84,14 +84,12 @@ func (r *ServiceRepository) List(ctx context.Context, f ListServicesFilter) ([]m
 
 	whereSQL := "WHERE " + strings.Join(where, " AND ")
 
-	// Count total
 	var total int
 	countSQL := "SELECT COUNT(*) FROM services " + whereSQL
 	if err := r.db.GetContext(ctx, &total, countSQL, args...); err != nil {
 		return nil, 0, fmt.Errorf("count services: %w", err)
 	}
 
-	// Fetch data
 	args = append(args, f.Limit, f.Offset)
 	query := fmt.Sprintf(
 		"SELECT * FROM services %s ORDER BY created_at DESC LIMIT $%d OFFSET $%d",
@@ -242,6 +240,20 @@ func (r *ServiceRepository) SyncMetadata(
 	err = r.db.GetContext(ctx, &s, query, slug, repoName, language, metaJSON)
 	if err != nil {
 		return nil, fmt.Errorf("sync metadata: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *ServiceRepository) GetByRepoURL(ctx context.Context, repoURL string) (*model.Service, error) {
+	if repoURL == "" {
+		return nil, fmt.Errorf("empty repo url")
+	}
+	var s model.Service
+	err := r.db.GetContext(ctx, &s,
+		"SELECT * FROM services WHERE repo_url = $1 LIMIT 1", repoURL,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get service by repo url: %w", err)
 	}
 	return &s, nil
 }

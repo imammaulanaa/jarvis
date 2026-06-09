@@ -9,6 +9,7 @@ import GitHubRepoCard from "@/components/catalog/GitHubRepoCard"
 import WorkflowRunsCard from "@/components/catalog/WorkflowRunsCard"
 import PullRequestsCard from "@/components/catalog/PullRequestsCard"
 import ReleasesCard from "@/components/catalog/ReleasesCard"
+import BranchProtectionCard from "@/components/catalog/BranchProtectionCard"
 import AuditLogList from "@/components/catalog/AuditLogList"
 import type { Service, AuditLogResponse, GitHubMetadata } from "@/lib/types"
 
@@ -84,6 +85,20 @@ function ReleasesSkeleton() {
   )
 }
 
+function ProtectionSkeleton() {
+  return (
+    <div className="rounded-xl border p-5 mb-6 animate-pulse" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+      <div className="h-4 w-40 rounded mb-4" style={{ background: "var(--border)" }} />
+      {[1, 2, 3, 4, 5].map(i => (
+        <div key={i} className="flex gap-2 mb-2 items-center">
+          <div className="w-4 h-4 rounded-full shrink-0" style={{ background: "var(--border)" }} />
+          <div className="h-3 w-2/3 rounded" style={{ background: "var(--border)" }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AuditLogSkeleton() {
   return (
     <div className="flex flex-col gap-4 animate-pulse">
@@ -153,6 +168,12 @@ export default async function ServiceDetailPage({ params }: Props) {
       {service!.repo_url ? (
         <Suspense fallback={<ReleasesSkeleton />}>
           <ReleasesCard repoUrl={service!.repo_url} />
+        </Suspense>
+      ) : null}
+
+      {service!.repo_url ? (
+        <Suspense fallback={<ProtectionSkeleton />}>
+          <BranchProtectionCard slug={service!.slug} repoUrl={service!.repo_url} />
         </Suspense>
       ) : null}
 

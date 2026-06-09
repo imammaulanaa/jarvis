@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"  
+
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/imammaulanaa/jarvis/api/internal/auth"
@@ -25,7 +27,6 @@ func NewGitHubHandler(
 	}
 }
 
-// POST /api/services/:slug/sync-github
 func (h *GitHubHandler) SyncRepo(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 
@@ -49,7 +50,6 @@ func (h *GitHubHandler) SyncRepo(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid GitHub repo URL"})
 	}
 
-	// Fetch FULL metadata
 	meta, err := h.gh.FetchFullMetadata(c.Context(), owner, repo)
 	if err != nil {
 		return c.Status(502).JSON(fiber.Map{
@@ -58,7 +58,6 @@ func (h *GitHubHandler) SyncRepo(c *fiber.Ctx) error {
 		})
 	}
 
-	// Simpan ke JSONB metadata
 	updated, err := h.serviceRepo.SyncMetadata(
 		c.Context(), slug, meta.RepoName, meta.Language, meta,
 	)
@@ -83,5 +82,77 @@ func (h *GitHubHandler) SyncRepo(c *fiber.Ctx) error {
 		"message":  "GitHub metadata synced successfully",
 		"metadata": meta,
 		"service":  updated,
+	})
+}
+
+func (h *GitHubHandler) RateLimit(c *fiber.Ctx) error {
+	info := h.gh.GetRateLimit()
+
+	if info.Limit == 0 {
+		return c.JSON(fiber.Map{
+			"message": "no GitHub API calls made yet",
+			"limit":   0,
+		})
+	}
+
+	usedPct := 0
+	if info.Limit > 0 {
+		usedPct = (info.Limit - info.Remaining) * 100 / info.Limit
+	}
+
+	return c.JSON(fiber.Map{
+		"limit":         info.Limit,
+		"remaining":     info.Remaining,
+		"used":          info.Limit - info.Remaining,
+		"used_percent":  usedPct,
+		"reset_at":      info.ResetAt,
+		"reset_in_secs": int(time.Until(info.ResetAt).Seconds()),
+	})
+}
+
+func (h *GitHubHandler) BranchProtection(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+
+	svc, err := h.serviceRepo.GetBySlug(c.Context(), slug)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "service not found"})
+	}
+
+	repoURL := ""
+	if svc.RepoURL != nil {
+		repoURL = *svc.RepoURL
+	}
+	if repoURL == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "service has no repo_url"})
+	}
+
+	owner, repo, err := ghclient.ParseURL(repoURL)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid GitHub repo URL"})
+	}
+
+	protection, err := h.gh.CheckBranchProtection(c.Context(), owner, repo)
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{
+			"error":  "failed to check branch protection",
+			"detail": err.Error(),
+		})
+	}
+
+	risk := "low"
+	if !protection.Protected {
+		if svc.Tier == "tier-1" {
+			risk = "critical"
+		} else if svc.Tier == "tier-2" {
+			risk = "high"
+		} else {
+			risk = "medium"
+		}
+	}
+
+	return c.JSON(fiber.Map{
+		"protection": protection,
+		"tier":       svc.Tier,
+		"risk":       risk,
 	})
 }

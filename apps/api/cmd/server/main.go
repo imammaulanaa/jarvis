@@ -42,6 +42,8 @@ func main() {
 	teamHandler := handler.NewTeamHandler(teamRepo, auditRepo)
 	auditHandler := handler.NewAuditHandler(auditRepo, serviceRepo)
 	githubHandler := handler.NewGitHubHandler(serviceRepo, auditRepo)
+	webhookHandler := handler.NewWebhookHandler(serviceRepo, auditRepo)
+
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
 	app.Use(logger.New())
@@ -60,6 +62,7 @@ func main() {
 
 	api := app.Group("/api")
 	api.Get("/audit-logs", auth.Protected(), auditHandler.ListGlobal)
+	api.Get("/github/rate-limit", auth.Protected(), githubHandler.RateLimit)
 
 	// Auth routes — public
 	authGroup := api.Group("/auth")
@@ -67,6 +70,8 @@ func main() {
 
 	// Auth routes — protected
 	authGroup.Get("/me", auth.Protected(), authHandler.Me)
+
+	api.Post("/webhooks/github", webhookHandler.HandleGitHub)
 
 	// Service routes — semua protected
 	services := api.Group("/services", auth.Protected())
@@ -79,6 +84,7 @@ func main() {
 	services.Post("/import", importHandler.ImportYAML)
 	services.Get("/:slug/audit-logs", auditHandler.ListByService)
 	services.Post("/:slug/sync-github", githubHandler.SyncRepo)
+	services.Get("/:slug/branch-protection", githubHandler.BranchProtection)
 
 	// Teams routes — semua protected
 	teams := api.Group("/teams", auth.Protected())
