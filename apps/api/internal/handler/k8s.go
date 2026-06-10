@@ -1,7 +1,8 @@
 package handler
 
 import (
-	"encoding/json"  
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -11,19 +12,24 @@ import (
 )
 
 type K8sHandler struct {
-	client *k8s.Client
-}
-
-type K8sHandler struct {
 	client      *k8s.Client
 	serviceRepo *repository.ServiceRepository
 	auditRepo   *repository.AuditRepository
 }
 
-func NewK8sHandler(client *k8s.Client) *K8sHandler {
-	return &K8sHandler{client: client}
+func NewK8sHandler(
+	client *k8s.Client,
+	serviceRepo *repository.ServiceRepository,
+	auditRepo *repository.AuditRepository,
+) *K8sHandler {
+	return &K8sHandler{
+		client:      client,
+		serviceRepo: serviceRepo,
+		auditRepo:   auditRepo,
+	}
 }
 
+// GET /api/k8s/health
 func (h *K8sHandler) Health(c *fiber.Ctx) error {
 	if h.client == nil {
 		return c.JSON(fiber.Map{
@@ -35,6 +41,7 @@ func (h *K8sHandler) Health(c *fiber.Ctx) error {
 	return c.JSON(info)
 }
 
+// GET /api/k8s/namespaces
 func (h *K8sHandler) ListNamespaces(c *fiber.Ctx) error {
 	if h.client == nil {
 		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
@@ -72,14 +79,7 @@ func (h *K8sHandler) ListNamespaces(c *fiber.Ctx) error {
 	})
 }
 
-func NewK8sHandler(
-	client *k8s.Client,
-	serviceRepo *repository.ServiceRepository,
-	auditRepo *repository.AuditRepository,
-) *K8sHandler {
-	return &K8sHandler{client: client, serviceRepo: serviceRepo, auditRepo: auditRepo}
-}
-
+// GET /api/k8s/deployments?namespace=default
 func (h *K8sHandler) ListDeployments(c *fiber.Ctx) error {
 	if h.client == nil {
 		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
@@ -92,6 +92,7 @@ func (h *K8sHandler) ListDeployments(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"deployments": deps, "total": len(deps)})
 }
 
+// GET /api/services/:slug/deployment
 func (h *K8sHandler) GetServiceDeployment(c *fiber.Ctx) error {
 	if h.client == nil {
 		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
@@ -110,14 +111,17 @@ func (h *K8sHandler) GetServiceDeployment(c *fiber.Ctx) error {
 		} `json:"k8s"`
 	}
 	if svc.Metadata != nil {
-		_ = json.Unmarshal(svc.Metadata, &meta)
+		data, err := json.Marshal(svc.Metadata)
+		if err == nil {
+			_ = json.Unmarshal(data, &meta)
+		}
 	}
 
 	if meta.K8s.Namespace == "" || meta.K8s.Deployment == "" {
 		return c.Status(404).JSON(fiber.Map{
-			"error":   "service not linked to deployment",
-			"hint":    "use POST /api/services/:slug/link-deployment to set",
-			"linked":  false,
+			"error":  "service not linked to deployment",
+			"hint":   "use POST /api/services/:slug/link-deployment to set",
+			"linked": false,
 		})
 	}
 
@@ -160,5 +164,44 @@ func (h *K8sHandler) LinkDeployment(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "deployment linked",
 		"service": updated,
+	})
+}
+
+func (h *K8sHandler) GetServicePods(c *fiber.Ctx) error {
+	if h.client == nil {
+		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
+	}
+
+	slug := c.Params("slug")
+	svc, err := h.serviceRepo.GetBySlug(c.Context(), slug)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "service not found"})
+	}
+
+	var meta struct {
+		K8s struct {
+			Namespace  string `json:"namespace"`
+			Deployment string `json:"deployment"`
+		} `json:"k8s"`
+	}
+	if svc.Metadata != nil {
+		_ = json.Unmarshal(svc.Metadata, &meta)
+	}
+
+	if meta.K8s.Namespace == "" || meta.K8s.Deployment == "" {
+		return c.JSON(fiber.Map{"pods": []interface{}{}, "total": 0, "linked": false})
+	}
+
+	pods, err := h.client.ListPodsForDeployment(
+		c.Context(), meta.K8s.Namespace, meta.K8s.Deployment,
+	)
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"pods":   pods,
+		"total":  len(pods),
+		"linked": true,
 	})
 }

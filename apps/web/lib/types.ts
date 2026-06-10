@@ -105,3 +105,37 @@ export interface GitHubMetadata {
   last_commit_by?:   string
   synced_at?:        string
 }
+
+export interface KubernetesRef {
+  namespace?:  string
+  deployment?: string
+}
+
+export interface DeploymentStatus {
+  name:               string
+  namespace:          string
+  ready_replicas:     number
+  desired_replicas:   number
+  updated_replicas:   number
+  available_replicas: number
+  image:              string
+  strategy:           string
+  conditions:         {
+    type:     string
+    status:   string
+    reason?:  string
+    message?: string
+  }[]
+  labels?:    Record<string, unknown>
+  created_at: string
+  healthy:    boolean
+}
+
+export interface DeploymentListItem {
+  name:             string
+  namespace:        string
+  ready_replicas:   number
+  desired_replicas: number
+  image:            string
+  healthy:          boolean
+}

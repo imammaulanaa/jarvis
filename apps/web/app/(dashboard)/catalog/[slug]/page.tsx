@@ -1,5 +1,5 @@
 import { Suspense } from "react"
-import { Rocket, Clock } from "lucide-react"
+import { Clock } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { apiFetch } from "@/lib/api"
 import ServiceDetailHeader from "@/components/catalog/ServiceDetailHeader"
@@ -10,6 +10,7 @@ import WorkflowRunsCard from "@/components/catalog/WorkflowRunsCard"
 import PullRequestsCard from "@/components/catalog/PullRequestsCard"
 import ReleasesCard from "@/components/catalog/ReleasesCard"
 import BranchProtectionCard from "@/components/catalog/BranchProtectionCard"
+import DeploymentStatusCard from "@/components/catalog/DeploymentStatusCard"
 import AuditLogList from "@/components/catalog/AuditLogList"
 import type { Service, AuditLogResponse, GitHubMetadata } from "@/lib/types"
 
@@ -99,6 +100,16 @@ function ProtectionSkeleton() {
   )
 }
 
+function DeploymentSkeleton() {
+  return (
+    <div className="rounded-xl border p-5 mb-6 animate-pulse" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+      <div className="h-4 w-44 rounded mb-4" style={{ background: "var(--border)" }} />
+      <div className="h-2 w-full rounded mb-3" style={{ background: "var(--border)" }} />
+      <div className="h-12 rounded-xl" style={{ background: "var(--bg-secondary)" }} />
+    </div>
+  )
+}
+
 function AuditLogSkeleton() {
   return (
     <div className="flex flex-col gap-4 animate-pulse">
@@ -145,6 +156,11 @@ export default async function ServiceDetailPage({ params }: Props) {
       <ServiceDetailHeader service={service!} token={token} />
       <ServiceInfoGrid service={service!} />
 
+      {/* Kubernetes Deployment (real, replaces placeholder) */}
+      <Suspense fallback={<DeploymentSkeleton />}>
+        <DeploymentStatusCard slug={service!.slug} />
+      </Suspense>
+
       {ghMeta ? <SyncedMetadataCard meta={ghMeta} /> : null}
 
       {service!.repo_url ? (
@@ -176,29 +192,6 @@ export default async function ServiceDetailPage({ params }: Props) {
           <BranchProtectionCard slug={service!.slug} repoUrl={service!.repo_url} />
         </Suspense>
       ) : null}
-
-      {/* Deployment History */}
-      <div className="rounded-xl border p-5 mb-6" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Deployment History</h2>
-          <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
-            style={{ background: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-          >
-            <Rocket size={12} />
-            Deploy
-          </button>
-        </div>
-        <div className="flex flex-col items-center py-10 gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <Clock size={18} style={{ color: "var(--text-muted)" }} />
-          </div>
-          <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>No deployments yet</p>
-          <p className="text-xs text-center max-w-xs" style={{ color: "var(--text-muted)" }}>
-            Deployment history akan muncul setelah Phase 4 selesai.
-          </p>
-        </div>
-      </div>
 
       {/* Recent Activity */}
       <div className="rounded-xl border p-5" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
