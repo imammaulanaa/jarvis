@@ -1,5 +1,4 @@
 import { Suspense } from "react"
-import { Clock } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { apiFetch } from "@/lib/api"
 import ServiceDetailHeader from "@/components/catalog/ServiceDetailHeader"
@@ -11,6 +10,7 @@ import PullRequestsCard from "@/components/catalog/PullRequestsCard"
 import ReleasesCard from "@/components/catalog/ReleasesCard"
 import BranchProtectionCard from "@/components/catalog/BranchProtectionCard"
 import DeploymentStatusCard from "@/components/catalog/DeploymentStatusCard"
+import PodListCard from "@/components/catalog/PodListCard"
 import AuditLogList from "@/components/catalog/AuditLogList"
 import type { Service, AuditLogResponse, GitHubMetadata } from "@/lib/types"
 
@@ -110,6 +110,23 @@ function DeploymentSkeleton() {
   )
 }
 
+function PodListSkeleton() {
+  return (
+    <div className="rounded-xl border p-5 mb-6 animate-pulse" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+      <div className="h-4 w-20 rounded mb-4" style={{ background: "var(--border)" }} />
+      {[1, 2, 3].map(i => (
+        <div key={i} className="flex items-center gap-3 p-3 rounded-xl mb-2" style={{ background: "var(--bg-secondary)" }}>
+          <div className="w-8 h-8 rounded-xl shrink-0" style={{ background: "var(--border)" }} />
+          <div className="flex-1">
+            <div className="h-3 w-2/3 rounded mb-1.5" style={{ background: "var(--border)" }} />
+            <div className="h-2.5 w-1/3 rounded" style={{ background: "var(--border)" }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AuditLogSkeleton() {
   return (
     <div className="flex flex-col gap-4 animate-pulse">
@@ -156,9 +173,14 @@ export default async function ServiceDetailPage({ params }: Props) {
       <ServiceDetailHeader service={service!} token={token} />
       <ServiceInfoGrid service={service!} />
 
-      {/* Kubernetes Deployment (real, replaces placeholder) */}
+      {/* Kubernetes Deployment */}
       <Suspense fallback={<DeploymentSkeleton />}>
         <DeploymentStatusCard slug={service!.slug} />
+      </Suspense>
+
+      {/* Pods */}
+      <Suspense fallback={<PodListSkeleton />}>
+        <PodListCard slug={service!.slug} />
       </Suspense>
 
       {ghMeta ? <SyncedMetadataCard meta={ghMeta} /> : null}

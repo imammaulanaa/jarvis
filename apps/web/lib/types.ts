@@ -139,3 +139,20 @@ export interface DeploymentListItem {
   image:            string
   healthy:          boolean
 }
+
+export interface PodStatus {
+  name:             string
+  namespace:        string
+  phase:            string
+  ready_containers: number
+  total_containers: number
+  restart_count:    number
+  node:             string
+  pod_ip:           string
+  host_ip:          string
+  started_at?:      string
+  age:              string
+  image:            string
+  healthy:          boolean
+  reason?:          string
+}
