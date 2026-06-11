@@ -171,3 +171,28 @@ export interface K8sEvent {
   last_seen:  string
   age:        string
 }
+
+export interface OverviewDeployment {
+  name:             string
+  namespace:        string
+  ready_replicas:   number
+  desired_replicas: number
+  image:            string
+  healthy:          boolean
+  linked_service?:  string
+}
+
+export interface NamespaceOverview {
+  namespace:   string
+  deployments: OverviewDeployment[]
+}
+
+export interface ClusterOverviewResponse {
+  namespaces: NamespaceOverview[]
+  summary: {
+    total_deployments: number
+    healthy:           number
+    linked:            number
+    unlinked:          number
+  }
+}

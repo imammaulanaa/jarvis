@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutGrid, Rocket, Settings, Wand2, Users, Zap } from "lucide-react"
+import { LayoutGrid, Rocket, Settings, Wand2, Users, Zap, Boxes } from "lucide-react"
 import { cn } from "@/lib/cn"
+
 
 const NAV_ITEMS = [
   { label: "Catalog",      href: "/catalog",     icon: LayoutGrid, desc: "Service registry"    },
