@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn"
 const NAV_ITEMS = [
   { label: "Catalog",      href: "/catalog",     icon: LayoutGrid, desc: "Service registry"    },
   { label: "Teams",        href: "/teams",        icon: Users,      desc: "Team management"     },
+  { label: "Infrastructure", href: "/infrastructure", icon: Boxes,      desc: "K8s cluster view"  },
   { label: "Deployments",  href: "/deployments",  icon: Rocket,     badge: "Phase 4"            },
   { label: "Provisioning", href: "/provisioning", icon: Settings,   badge: "Phase 5"            },
   { label: "Onboarding",   href: "/onboarding",   icon: Wand2,      badge: "Phase 6"            },
