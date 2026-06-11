@@ -13,6 +13,7 @@ import DeploymentStatusCard from "@/components/catalog/DeploymentStatusCard"
 import PodListCard from "@/components/catalog/PodListCard"
 import AuditLogList from "@/components/catalog/AuditLogList"
 import type { Service, AuditLogResponse, GitHubMetadata } from "@/lib/types"
+import K8sEventsCard from "@/components/catalog/K8sEventsCard"
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -143,6 +144,17 @@ function AuditLogSkeleton() {
   )
 }
 
+function EventsSkeleton() {
+  return (
+    <div className="rounded-xl border p-5 mb-6 animate-pulse" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+      <div className="h-4 w-40 rounded mb-4" style={{ background: "var(--border)" }} />
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="h-10 rounded-xl mb-1.5" style={{ background: "var(--bg-secondary)" }} />
+      ))}
+    </div>
+  )
+}
+
 async function AuditLogSection({ slug }: { slug: string }) {
   let logs: AuditLogResponse = { data: [], total: 0 }
   try {
@@ -181,6 +193,10 @@ export default async function ServiceDetailPage({ params }: Props) {
       {/* Pods */}
       <Suspense fallback={<PodListSkeleton />}>
         <PodListCard slug={service!.slug} />
+      </Suspense>
+
+      <Suspense fallback={<EventsSkeleton />}>
+        <K8sEventsCard slug={service!.slug} />
       </Suspense>
 
       {ghMeta ? <SyncedMetadataCard meta={ghMeta} /> : null}

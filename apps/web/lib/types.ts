@@ -160,3 +160,14 @@ export interface PodStatus {
   cpu_milli?:       number
   mem_bytes?:       number
 }
+
+export interface K8sEvent {
+  type:       string
+  reason:     string
+  message:    string
+  object:     string
+  count:      number
+  first_seen: string
+  last_seen:  string
+  age:        string
+}
