@@ -238,3 +238,44 @@ func (h *K8sHandler) SyncHealth(c *fiber.Ctx) error {
 		"changed": changed,
 	})
 }
+
+func (h *K8sHandler) GetServiceEvents(c *fiber.Ctx) error {
+	if h.client == nil {
+		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
+	}
+
+	slug := c.Params("slug")
+	svc, err := h.serviceRepo.GetBySlug(c.Context(), slug)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "service not found"})
+	}
+
+	var meta struct {
+		K8s struct {
+			Namespace  string `json:"namespace"`
+			Deployment string `json:"deployment"`
+		} `json:"k8s"`
+	}
+	if svc.Metadata != nil {
+		if raw, err := json.Marshal(svc.Metadata); err == nil {
+			_ = json.Unmarshal(raw, &meta)
+		}
+	}
+
+	if meta.K8s.Namespace == "" || meta.K8s.Deployment == "" {
+		return c.JSON(fiber.Map{"events": []interface{}{}, "total": 0, "linked": false})
+	}
+
+	events, err := h.client.ListEventsForDeployment(
+		c.Context(), meta.K8s.Namespace, meta.K8s.Deployment,
+	)
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"events": events,
+		"total":  len(events),
+		"linked": true,
+	})
+}

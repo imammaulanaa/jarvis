@@ -94,7 +94,8 @@ func main() {
 	services.Get("/:slug/branch-protection", githubHandler.BranchProtection)
 	services.Get("/:slug/deployment",       k8sHandler.GetServiceDeployment)
 	services.Post("/:slug/link-deployment", k8sHandler.LinkDeployment)
-	services.Get("/:slug/pods", k8sHandler.GetServicePods)
+	services.Get("/:slug/pods", 			k8sHandler.GetServicePods)
+	services.Get("/:slug/events", 			k8sHandler.GetServiceEvents)
 
 	teams := api.Group("/teams", auth.Protected())
 	teams.Get("/",                         teamHandler.List)
