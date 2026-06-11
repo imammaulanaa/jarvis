@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/imammaulanaa/jarvis/api/internal/handler"
 	"github.com/imammaulanaa/jarvis/api/internal/k8s"
 	"github.com/imammaulanaa/jarvis/api/internal/repository"
+	"github.com/imammaulanaa/jarvis/api/internal/worker"
 )
 
 func main() {
@@ -42,6 +44,9 @@ func main() {
 		k8sClient = nil
 	}
 
+	healthSync := worker.NewHealthSync(k8sClient, serviceRepo, auditRepo)
+	healthSync.Start(context.Background())
+	
 	authHandler    := handler.NewAuthHandler(userRepo)
 	serviceHandler := handler.NewServiceHandler(serviceRepo, auditRepo)
 	importHandler  := handler.NewImportHandler(serviceRepo, teamRepo, auditRepo)
@@ -49,8 +54,7 @@ func main() {
 	auditHandler   := handler.NewAuditHandler(auditRepo, serviceRepo)
 	githubHandler  := handler.NewGitHubHandler(serviceRepo, auditRepo)
 	webhookHandler := handler.NewWebhookHandler(serviceRepo, auditRepo)
-	k8sHandler 	   := handler.NewK8sHandler(k8sClient, serviceRepo, auditRepo)
-
+	k8sHandler 	   := handler.NewK8sHandler(k8sClient, serviceRepo, auditRepo, healthSync)
 
 	app := fiber.New(fiber.Config{AppName: "JARVIS API"})
 	app.Use(logger.New())
@@ -102,6 +106,7 @@ func main() {
 	k8sGroup := api.Group("/k8s", auth.Protected())
 	k8sGroup.Get("/health",     k8sHandler.Health)
 	k8sGroup.Get("/namespaces", k8sHandler.ListNamespaces)
+	k8sGroup.Post("/sync-health", k8sHandler.SyncHealth)
 
 	port := os.Getenv("PORT")
 	if port == "" {

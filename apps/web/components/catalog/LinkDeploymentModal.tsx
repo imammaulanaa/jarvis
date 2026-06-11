@@ -67,8 +67,11 @@ export default function LinkDeploymentModal({ slug, token, current }: Props) {
           API_URL + "/api/services/" + slug + "/link-deployment",
           {
             method:  "POST",
-            headers: { ...authHeader, "Content-Type": "application/json" },
-            body:    JSON.stringify({ namespace, deployment }),
+            headers: {
+              Authorization:  "Bearer " + token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ namespace, deployment }),
           }
         )
         if (!res.ok) {

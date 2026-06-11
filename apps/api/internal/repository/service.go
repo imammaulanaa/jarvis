@@ -286,3 +286,30 @@ func (r *ServiceRepository) SetK8sRef(
 	}
 	return &s, nil
 }
+
+type K8sLinkedService struct {
+	ID         uuid.UUID `db:"id"`
+	Slug       string    `db:"slug"`
+	Status     string    `db:"status"`
+	Namespace  string    `db:"namespace"`
+	Deployment string    `db:"deployment"`
+}
+
+func (r *ServiceRepository) ListWithK8sRef(ctx context.Context) ([]K8sLinkedService, error) {
+	var out []K8sLinkedService
+	err := r.db.SelectContext(ctx, &out, `
+		SELECT
+			id, slug, status,
+			metadata->'k8s'->>'namespace'  AS namespace,
+			metadata->'k8s'->>'deployment' AS deployment
+		FROM services
+		WHERE jsonb_exists(metadata, 'k8s')
+		  AND metadata->'k8s'->>'namespace'  IS NOT NULL
+		  AND metadata->'k8s'->>'deployment' IS NOT NULL
+		  AND lifecycle != 'archived'
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list k8s linked services: %w", err)
+	}
+	return out, nil
+}

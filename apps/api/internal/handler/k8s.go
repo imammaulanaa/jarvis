@@ -9,23 +9,27 @@ import (
 	"github.com/imammaulanaa/jarvis/api/internal/auth"
 	"github.com/imammaulanaa/jarvis/api/internal/k8s"
 	"github.com/imammaulanaa/jarvis/api/internal/repository"
+	"github.com/imammaulanaa/jarvis/api/internal/worker"
 )
 
 type K8sHandler struct {
 	client      *k8s.Client
 	serviceRepo *repository.ServiceRepository
 	auditRepo   *repository.AuditRepository
+	healthSync  *worker.HealthSync
 }
 
 func NewK8sHandler(
 	client *k8s.Client,
 	serviceRepo *repository.ServiceRepository,
 	auditRepo *repository.AuditRepository,
+	healthSync *worker.HealthSync,
 ) *K8sHandler {
 	return &K8sHandler{
 		client:      client,
 		serviceRepo: serviceRepo,
 		auditRepo:   auditRepo,
+		healthSync:  healthSync,
 	}
 }
 
@@ -185,7 +189,9 @@ func (h *K8sHandler) GetServicePods(c *fiber.Ctx) error {
 		} `json:"k8s"`
 	}
 	if svc.Metadata != nil {
-		_ = json.Unmarshal(svc.Metadata, &meta)
+		if raw, err := json.Marshal(svc.Metadata); err == nil {
+			_ = json.Unmarshal(raw, &meta)
+		}
 	}
 
 	if meta.K8s.Namespace == "" || meta.K8s.Deployment == "" {
@@ -203,5 +209,17 @@ func (h *K8sHandler) GetServicePods(c *fiber.Ctx) error {
 		"pods":   pods,
 		"total":  len(pods),
 		"linked": true,
+	})
+}
+
+func (h *K8sHandler) SyncHealth(c *fiber.Ctx) error {
+	if h.client == nil || h.healthSync == nil {
+		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
+	}
+	checked, changed := h.healthSync.SyncAll(c.Context())
+	return c.JSON(fiber.Map{
+		"message": "health sync completed",
+		"checked": checked,
+		"changed": changed,
 	})
 }
