@@ -155,4 +155,8 @@ export interface PodStatus {
   image:            string
   healthy:          boolean
   reason?:          string
+  cpu_display?:     string
+  mem_display?:     string
+  cpu_milli?:       number
+  mem_bytes?:       number
 }

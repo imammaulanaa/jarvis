@@ -144,6 +144,31 @@ export default async function PodListCard({ slug }: Props) {
 
               {/* Stats */}
               <div className="flex items-center gap-4 shrink-0">
+                {/* CPU */}
+                {pod.cpu_display ? (
+                  <div className="text-right">
+                    <p className="text-[9px] uppercase tracking-wider font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
+                      CPU
+                    </p>
+                    <p className="text-xs font-mono-jarvis font-bold" style={{ color: "var(--cyan)" }}>
+                      {pod.cpu_display}
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* Memory */}
+                {pod.mem_display ? (
+                  <div className="text-right">
+                    <p className="text-[9px] uppercase tracking-wider font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
+                      Mem
+                    </p>
+                    <p className="text-xs font-mono-jarvis font-bold" style={{ color: "var(--accent)" }}>
+                      {pod.mem_display}
+                    </p>
+                  </div>
+                ) : null}
+
+                {/* Ready */}
                 <div className="text-right">
                   <p className="text-[9px] uppercase tracking-wider font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
                     Ready
@@ -156,6 +181,7 @@ export default async function PodListCard({ slug }: Props) {
                   </p>
                 </div>
 
+                {/* Restarts */}
                 <div className="text-right">
                   <p className="text-[9px] uppercase tracking-wider font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
                     Restarts
@@ -172,6 +198,7 @@ export default async function PodListCard({ slug }: Props) {
                   </p>
                 </div>
 
+                {/* Age */}
                 <div className="text-right">
                   <p className="text-[9px] uppercase tracking-wider font-mono-jarvis" style={{ color: "var(--text-muted)" }}>
                     Age
