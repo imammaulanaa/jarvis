@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutGrid, Rocket, Settings, Wand2, Users, Zap, Boxes } from "lucide-react"
 import { cn } from "@/lib/cn"
+import SidebarStats from "./SidebarStats"
 
 
 const NAV_ITEMS = [
@@ -101,17 +102,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Infra status */}
-      <div className="p-4 mx-3 mb-4 rounded-xl border" style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
-          <span className="text-[11px] font-semibold" style={{ color: "var(--green)" }}>
-            All Systems Normal
-          </span>
-        </div>
-        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-          4 services · 0 incidents
-        </p>
-      </div>
+       <SidebarStats />
     </aside>
   )
 }
