@@ -313,3 +313,15 @@ func (r *ServiceRepository) ListWithK8sRef(ctx context.Context) ([]K8sLinkedServ
 	}
 	return out, nil
 }
+
+func (r *ServiceRepository) K8sRefMap(ctx context.Context) (map[string]string, error) {
+	linked, err := r.ListWithK8sRef(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(linked))
+	for _, s := range linked {
+		out[s.Namespace+"/"+s.Deployment] = s.Slug
+	}
+	return out, nil
+}

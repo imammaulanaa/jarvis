@@ -279,3 +279,58 @@ func (h *K8sHandler) GetServiceEvents(c *fiber.Ctx) error {
 		"linked": true,
 	})
 }
+
+func (h *K8sHandler) ClusterOverview(c *fiber.Ctx) error {
+	if h.client == nil {
+		return c.Status(503).JSON(fiber.Map{"error": "k8s not available"})
+	}
+
+	overview, err := h.client.ClusterOverview(c.Context())
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	refMap, err := h.serviceRepo.K8sRefMap(c.Context())
+	if err != nil {
+		refMap = map[string]string{}
+	}
+
+	type DeploymentWithLink struct {
+		k8s.DeploymentInfo
+		LinkedService string `json:"linked_service,omitempty"`
+	}
+	type NamespaceOut struct {
+		Namespace   string               `json:"namespace"`
+		Deployments []DeploymentWithLink `json:"deployments"`
+	}
+
+	out := make([]NamespaceOut, 0, len(overview))
+	totalDeps, totalHealthy, totalLinked := 0, 0, 0
+
+	for _, ns := range overview {
+		nsOut := NamespaceOut{Namespace: ns.Namespace}
+		for _, dep := range ns.Deployments {
+			d := DeploymentWithLink{DeploymentInfo: dep}
+			if slug, ok := refMap[ns.Namespace+"/"+dep.Name]; ok {
+				d.LinkedService = slug
+				totalLinked++
+			}
+			if dep.Healthy {
+				totalHealthy++
+			}
+			totalDeps++
+			nsOut.Deployments = append(nsOut.Deployments, d)
+		}
+		out = append(out, nsOut)
+	}
+
+	return c.JSON(fiber.Map{
+		"namespaces": out,
+		"summary": fiber.Map{
+			"total_deployments": totalDeps,
+			"healthy":           totalHealthy,
+			"linked":            totalLinked,
+			"unlinked":          totalDeps - totalLinked,
+		},
+	})
+}

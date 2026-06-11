@@ -108,6 +108,7 @@ func main() {
 	k8sGroup.Get("/health",     k8sHandler.Health)
 	k8sGroup.Get("/namespaces", k8sHandler.ListNamespaces)
 	k8sGroup.Post("/sync-health", k8sHandler.SyncHealth)
+	k8sGroup.Get("/overview", k8sHandler.ClusterOverview)
 
 	port := os.Getenv("PORT")
 	if port == "" {

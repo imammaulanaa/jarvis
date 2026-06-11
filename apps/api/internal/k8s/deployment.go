@@ -29,6 +29,11 @@ type ConditionInfo struct {
 	Message string `json:"message,omitempty"`
 }
 
+type NamespaceOverview struct {
+	Namespace   string           `json:"namespace"`
+	Deployments []DeploymentInfo `json:"deployments"`
+}
+
 func (c *Client) GetDeployment(ctx context.Context, namespace, name string) (*DeploymentInfo, error) {
 	if c.cs == nil {
 		return nil, fmt.Errorf("k8s client not initialized")
@@ -97,3 +102,43 @@ func (c *Client) ListDeployments(ctx context.Context, namespace string) ([]Deplo
 	}
 	return out, nil
 }
+
+func (c *Client) ClusterOverview(ctx context.Context) ([]NamespaceOverview, error) {
+	if c.cs == nil {
+		return nil, fmt.Errorf("k8s client not initialized")
+	}
+
+	skipNS := map[string]bool{
+		"kube-system":     true,
+		"kube-public":     true,
+		"kube-node-lease": true,
+	}
+
+	nsList, err := c.cs.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("list namespaces: %w", err)
+	}
+
+	out := make([]NamespaceOverview, 0)
+	for _, ns := range nsList.Items {
+		if skipNS[ns.Name] {
+			continue
+		}
+
+		deps, err := c.ListDeployments(ctx, ns.Name)
+		if err != nil {
+			continue // skip namespace yang error
+		}
+		if len(deps) == 0 {
+			continue // skip namespace kosong
+		}
+
+		out = append(out, NamespaceOverview{
+			Namespace:   ns.Name,
+			Deployments: deps,
+		})
+	}
+
+	return out, nil
+}
+
