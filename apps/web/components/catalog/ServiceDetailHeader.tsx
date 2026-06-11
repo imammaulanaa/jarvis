@@ -150,7 +150,7 @@ export default function ServiceDetailHeader({ service, token }: Props) {
 
             {repoUrl ? (
               
-                href={repoUrl}
+              <a href={repoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
@@ -164,7 +164,7 @@ export default function ServiceDetailHeader({ service, token }: Props) {
 
             {docsUrl ? (
               
-                href={docsUrl}
+              <a href={docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"

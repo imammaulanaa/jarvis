@@ -199,17 +199,32 @@ func (h *K8sHandler) GetServicePods(c *fiber.Ctx) error {
 	}
 
 	pods, err := h.client.ListPodsForDeployment(
-		c.Context(), meta.K8s.Namespace, meta.K8s.Deployment,
-	)
-	if err != nil {
-		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
-	}
+			c.Context(), meta.K8s.Namespace, meta.K8s.Deployment,
+		)
+		if err != nil {
+			return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+		}
 
-	return c.JSON(fiber.Map{
-		"pods":   pods,
-		"total":  len(pods),
-		"linked": true,
-	})
+		// Merge metrics (graceful fail — metrics-server optional)
+		metrics, err := h.client.GetPodMetricsForDeployment(
+			c.Context(), meta.K8s.Namespace, meta.K8s.Deployment,
+		)
+		if err == nil {
+			for i := range pods {
+				if m, ok := metrics[pods[i].Name]; ok {
+					pods[i].CPUDisplay = m.CPUDisplay
+					pods[i].MemDisplay = m.MemDisplay
+					pods[i].CPUMilli   = m.CPUMilli
+					pods[i].MemBytes   = m.MemoryBytes
+				}
+			}
+		}
+
+		return c.JSON(fiber.Map{
+			"pods":   pods,
+			"total":  len(pods),
+			"linked": true,
+		})
 }
 
 func (h *K8sHandler) SyncHealth(c *fiber.Ctx) error {

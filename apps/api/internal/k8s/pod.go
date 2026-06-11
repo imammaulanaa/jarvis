@@ -25,6 +25,10 @@ type PodInfo struct {
 	Image             string `json:"image"`
 	Healthy           bool   `json:"healthy"`
 	Reason            string `json:"reason,omitempty"`
+	CPUDisplay 		  string `json:"cpu_display,omitempty"`
+	MemDisplay 		  string `json:"mem_display,omitempty"`
+	CPUMilli   		  int64  `json:"cpu_milli,omitempty"`
+	MemBytes   		  int64  `json:"mem_bytes,omitempty"`
 }
 
 func formatAge(t time.Time) string {
