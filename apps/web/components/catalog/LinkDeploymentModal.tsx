@@ -33,18 +33,34 @@ export default function LinkDeploymentModal({ slug, token, current }: Props) {
   const router                        = useRouter()
 
   // Load namespaces saat modal dibuka
+// Load deployments saat namespace berubah
   useEffect(() => {
-    if (!open) return
+    if (!namespace) return
+
     const controller = new AbortController()
-    fetch(API_URL + "/api/k8s/namespaces", {
-      headers: { Authorization: "Bearer " + token },
-      signal:  controller.signal,
-    })
-      .then(r => r.json())
-      .then(d => setNamespaces((d as { namespaces?: Namespace[] }).namespaces ?? []))
-      .catch(() => {})
+
+    const loadDeployments = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(
+          API_URL + "/api/k8s/deployments?namespace=" + namespace,
+          {
+            headers: { Authorization: "Bearer " + token },
+            signal:  controller.signal,
+          }
+        )
+        const d = await res.json()
+        setDeployments((d as { deployments?: Deployment[] }).deployments ?? [])
+      } catch {
+        // ignore (termasuk abort)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDeployments()
     return () => controller.abort()
-  }, [open, token])
+  }, [namespace, token])
 
   // Load deployments saat namespace berubah
   useEffect(() => {
