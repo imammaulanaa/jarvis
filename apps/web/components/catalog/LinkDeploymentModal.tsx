@@ -32,28 +32,37 @@ export default function LinkDeploymentModal({ slug, token, current }: Props) {
   const [error, setError]             = useState("")
   const router                        = useRouter()
 
-  const authHeader = { Authorization: "Bearer " + token }
-
   // Load namespaces saat modal dibuka
   useEffect(() => {
     if (!open) return
-    fetch(API_URL + "/api/k8s/namespaces", { headers: authHeader })
+    const controller = new AbortController()
+    fetch(API_URL + "/api/k8s/namespaces", {
+      headers: { Authorization: "Bearer " + token },
+      signal:  controller.signal,
+    })
       .then(r => r.json())
       .then(d => setNamespaces((d as { namespaces?: Namespace[] }).namespaces ?? []))
-      .catch(() => setError("Failed to load namespaces — k8s available?"))
-  }, [open])
+      .catch(() => {})
+    return () => controller.abort()
+  }, [open, token])
 
+  // Load deployments saat namespace berubah
   useEffect(() => {
-    if (!namespace) {
-      setDeployments([])
-      return
-    }
+    if (!namespace) return
+
+    const controller = new AbortController()
     setLoading(true)
-    fetch(API_URL + "/api/k8s/deployments?namespace=" + namespace, { headers: authHeader })
+    fetch(API_URL + "/api/k8s/deployments?namespace=" + namespace, {
+      headers: { Authorization: "Bearer " + token },
+      signal:  controller.signal,
+    })
       .then(r => r.json())
       .then(d => setDeployments((d as { deployments?: Deployment[] }).deployments ?? []))
+      .catch(() => {})
       .finally(() => setLoading(false))
-  }, [namespace])
+
+    return () => controller.abort()
+  }, [namespace, token])
 
   const handleSubmit = () => {
     if (!namespace || !deployment) {
