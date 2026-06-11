@@ -33,6 +33,14 @@ type ListServicesFilter struct {
 	Offset    int
 }
 
+type StatusStats struct {
+	Total    int `db:"total"    json:"total"`
+	Healthy  int `db:"healthy"  json:"healthy"`
+	Degraded int `db:"degraded" json:"degraded"`
+	Down     int `db:"down"     json:"down"`
+	Unknown  int `db:"unknown"  json:"unknown"`
+}
+
 func (r *ServiceRepository) List(ctx context.Context, f ListServicesFilter) ([]model.Service, int, error) {
 	if f.Limit == 0 {
 		f.Limit = 20
@@ -324,4 +332,22 @@ func (r *ServiceRepository) K8sRefMap(ctx context.Context) (map[string]string, e
 		out[s.Namespace+"/"+s.Deployment] = s.Slug
 	}
 	return out, nil
+}
+
+func (r *ServiceRepository) GetStatusStats(ctx context.Context) (*StatusStats, error) {
+	var s StatusStats
+	err := r.db.GetContext(ctx, &s, `
+		SELECT
+			COUNT(*)                                          AS total,
+			COUNT(*) FILTER (WHERE status = 'healthy')        AS healthy,
+			COUNT(*) FILTER (WHERE status = 'degraded')       AS degraded,
+			COUNT(*) FILTER (WHERE status = 'down')           AS down,
+			COUNT(*) FILTER (WHERE status = 'unknown')        AS unknown
+		FROM services
+		WHERE lifecycle != 'archived'
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("get status stats: %w", err)
+	}
+	return &s, nil
 }

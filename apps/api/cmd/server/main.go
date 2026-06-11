@@ -84,6 +84,7 @@ func main() {
 	services := api.Group("/services", auth.Protected())
 	services.Get("/",                       serviceHandler.List)
 	services.Post("/",                      serviceHandler.Create)
+	services.Get("/stats",   				serviceHandler.Stats)
 	services.Post("/import",                importHandler.ImportYAML)
 	services.Get("/:slug",                  serviceHandler.Get)
 	services.Put("/:slug",                  serviceHandler.Update)
