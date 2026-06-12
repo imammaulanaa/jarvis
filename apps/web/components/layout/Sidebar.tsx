@@ -2,12 +2,15 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutGrid, Rocket, Settings, Wand2, Users, Zap } from "lucide-react"
+import { LayoutGrid, Rocket, Settings, Wand2, Users, Zap, Boxes } from "lucide-react"
 import { cn } from "@/lib/cn"
+import SidebarStats from "./SidebarStats"
+
 
 const NAV_ITEMS = [
   { label: "Catalog",      href: "/catalog",     icon: LayoutGrid, desc: "Service registry"    },
   { label: "Teams",        href: "/teams",        icon: Users,      desc: "Team management"     },
+  { label: "Infrastructure", href: "/infrastructure", icon: Boxes,      desc: "K8s cluster view"  },
   { label: "Deployments",  href: "/deployments",  icon: Rocket,     badge: "Phase 4"            },
   { label: "Provisioning", href: "/provisioning", icon: Settings,   badge: "Phase 5"            },
   { label: "Onboarding",   href: "/onboarding",   icon: Wand2,      badge: "Phase 6"            },
@@ -99,17 +102,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Infra status */}
-      <div className="p-4 mx-3 mb-4 rounded-xl border" style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
-          <span className="text-[11px] font-semibold" style={{ color: "var(--green)" }}>
-            All Systems Normal
-          </span>
-        </div>
-        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-          4 services · 0 incidents
-        </p>
-      </div>
+       <SidebarStats />
     </aside>
   )
 }

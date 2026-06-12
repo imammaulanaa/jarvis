@@ -23,7 +23,6 @@ func NewServiceHandler(
 	return &ServiceHandler{serviceRepo: serviceRepo, auditRepo: auditRepo}
 }
 
-// GET /api/services
 func (h *ServiceHandler) List(c *fiber.Ctx) error {
 	filter := repository.ListServicesFilter{
 		Search:    c.Query("search"),
@@ -56,7 +55,6 @@ func (h *ServiceHandler) List(c *fiber.Ctx) error {
 	})
 }
 
-// GET /api/services/:slug
 func (h *ServiceHandler) Get(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 	svc, err := h.serviceRepo.GetBySlug(c.Context(), slug)
@@ -66,7 +64,6 @@ func (h *ServiceHandler) Get(c *fiber.Ctx) error {
 	return c.JSON(svc)
 }
 
-// POST /api/services
 func (h *ServiceHandler) Create(c *fiber.Ctx) error {
 	var input model.CreateServiceInput
 	if err := c.BodyParser(&input); err != nil {
@@ -94,7 +91,6 @@ func (h *ServiceHandler) Create(c *fiber.Ctx) error {
 	return c.Status(201).JSON(svc)
 }
 
-// PUT /api/services/:slug
 func (h *ServiceHandler) Update(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 
@@ -121,7 +117,6 @@ func (h *ServiceHandler) Update(c *fiber.Ctx) error {
 	return c.JSON(svc)
 }
 
-// PATCH /api/services/:slug/status
 func (h *ServiceHandler) UpdateStatus(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 
@@ -156,7 +151,6 @@ func (h *ServiceHandler) UpdateStatus(c *fiber.Ctx) error {
 	return c.JSON(svc)
 }
 
-// DELETE /api/services/:slug
 func (h *ServiceHandler) Delete(c *fiber.Ctx) error {
 	slug := c.Params("slug")
 
@@ -183,7 +177,6 @@ func (h *ServiceHandler) Delete(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "service archived successfully"})
 }
 
-// parseUUID — helper parse UUID dari string
 func parseUUID(s string) *uuid.UUID {
 	if s == "" {
 		return nil
@@ -193,4 +186,24 @@ func parseUUID(s string) *uuid.UUID {
 		return nil
 	}
 	return &id
+}
+
+func (h *ServiceHandler) Stats(c *fiber.Ctx) error {
+	stats, err := h.serviceRepo.GetStatusStats(c.Context())
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "failed to get stats"})
+	}
+
+	overall := "operational"
+	if stats.Down > 0 {
+		overall = "outage"
+	} else if stats.Degraded > 0 {
+		overall = "degraded"
+	}
+
+	return c.JSON(fiber.Map{
+		"stats":     stats,
+		"overall":   overall,
+		"incidents": stats.Down + stats.Degraded,
+	})
 }

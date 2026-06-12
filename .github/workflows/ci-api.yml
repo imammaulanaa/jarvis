@@ -18,20 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.0'
+          go-version: '1.26.0'
+          check-latest: false
           cache-dependency-path: apps/api/go.sum
-
       - name: Download dependencies
         working-directory: apps/api
         run: go mod download
-
       - name: go vet
         working-directory: apps/api
         run: go vet ./...
-
       - name: go build check
         working-directory: apps/api
         run: go build ./...
@@ -55,22 +52,19 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.0'
+          go-version: '1.26.0'
+          check-latest: false
           cache-dependency-path: apps/api/go.sum
-
       - name: Download dependencies
         working-directory: apps/api
         run: go mod download
-
       - name: Run tests
         working-directory: apps/api
         env:
           DATABASE_URL: postgres://root:secret@localhost:5432/jarvis_test?sslmode=disable
         run: go test ./... -v -race -coverprofile=coverage.out
-
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
@@ -83,15 +77,13 @@ jobs:
     needs: [lint, test]
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.0'
+          go-version: '1.26.0'
+          check-latest: false
           cache-dependency-path: apps/api/go.sum
-
       - name: Build binary
         working-directory: apps/api
         run: CGO_ENABLED=0 go build -o bin/api cmd/server/main.go
-
       - name: Verify binary
         run: ./apps/api/bin/api --version 2>/dev/null || echo "Build OK"

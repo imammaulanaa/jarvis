@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn"
 import EditServiceModal from "./EditServiceModal"
 import StatusUpdateButton from "./StatusUpdateButton"
 import SyncGitHubButton from "./SyncGitHubButton"
+import LinkDeploymentModal from "./LinkDeploymentModal"
 import type { Service } from "@/lib/types"
 
 const STATUS_CONFIG = {
@@ -29,6 +30,10 @@ export default function ServiceDetailHeader({ service, token }: Props) {
   const tier    = TIER_CONFIG[service.tier]     ?? TIER_CONFIG["tier-3"]
   const repoUrl = service.repo_url ?? null
   const docsUrl = service.docs_url ?? null
+  const k8sRef  = (service.metadata as {
+    k8s?: { namespace?: string; deployment?: string }
+  } | undefined)?.k8s
+  const isK8sLinked = !!(k8sRef?.namespace && k8sRef?.deployment)
 
   return (
     <div>
@@ -110,16 +115,37 @@ export default function ServiceDetailHeader({ service, token }: Props) {
 
           {/* Right — actions */}
           <div className="flex items-center gap-2 flex-wrap">
-            <StatusUpdateButton
-              slug={service.slug}
-              currentStatus={service.status}
-              token={token}
-            />
+            {isK8sLinked ? (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+                style={{
+                  background: "var(--accent-glow)",
+                  color: "var(--accent)",
+                  border: "1px solid var(--accent-soft)",
+                }}
+                title={"Status otomatis dari " + k8sRef!.namespace + "/" + k8sRef!.deployment}
+              >
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--accent)" }} />
+                Auto-synced
+              </div>
+            ) : (
+              <StatusUpdateButton
+                slug={service.slug}
+                currentStatus={service.status}
+                token={token}
+              />
+            )}
 
             <SyncGitHubButton
               slug={service.slug}
               token={token}
               hasRepo={!!repoUrl}
+            />
+
+            <LinkDeploymentModal
+              slug={service.slug}
+              token={token}
+              current={k8sRef}
             />
 
             {repoUrl ? (

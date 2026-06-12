@@ -33,6 +33,14 @@ type ListServicesFilter struct {
 	Offset    int
 }
 
+type StatusStats struct {
+	Total    int `db:"total"    json:"total"`
+	Healthy  int `db:"healthy"  json:"healthy"`
+	Degraded int `db:"degraded" json:"degraded"`
+	Down     int `db:"down"     json:"down"`
+	Unknown  int `db:"unknown"  json:"unknown"`
+}
+
 func (r *ServiceRepository) List(ctx context.Context, f ListServicesFilter) ([]model.Service, int, error) {
 	if f.Limit == 0 {
 		f.Limit = 20
@@ -254,6 +262,92 @@ func (r *ServiceRepository) GetByRepoURL(ctx context.Context, repoURL string) (*
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get service by repo url: %w", err)
+	}
+	return &s, nil
+}
+
+func (r *ServiceRepository) SetK8sRef(
+	ctx context.Context,
+	slug, namespace, deployment string,
+) (*model.Service, error) {
+	k8sRef := map[string]string{
+		"namespace":  namespace,
+		"deployment": deployment,
+	}
+	metaJSON, err := json.Marshal(map[string]interface{}{
+		"k8s": k8sRef,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("marshal k8s ref: %w", err)
+	}
+
+	var s model.Service
+	err = r.db.GetContext(ctx, &s, `
+		UPDATE services SET
+			metadata   = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+			updated_at = NOW()
+		WHERE slug = $1
+		RETURNING *
+	`, slug, metaJSON)
+	if err != nil {
+		return nil, fmt.Errorf("set k8s ref: %w", err)
+	}
+	return &s, nil
+}
+
+type K8sLinkedService struct {
+	ID         uuid.UUID `db:"id"`
+	Slug       string    `db:"slug"`
+	Status     string    `db:"status"`
+	Namespace  string    `db:"namespace"`
+	Deployment string    `db:"deployment"`
+}
+
+func (r *ServiceRepository) ListWithK8sRef(ctx context.Context) ([]K8sLinkedService, error) {
+	var out []K8sLinkedService
+	err := r.db.SelectContext(ctx, &out, `
+		SELECT
+			id, slug, status,
+			metadata->'k8s'->>'namespace'  AS namespace,
+			metadata->'k8s'->>'deployment' AS deployment
+		FROM services
+		WHERE jsonb_exists(metadata, 'k8s')
+		  AND metadata->'k8s'->>'namespace'  IS NOT NULL
+		  AND metadata->'k8s'->>'deployment' IS NOT NULL
+		  AND lifecycle != 'archived'
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list k8s linked services: %w", err)
+	}
+	return out, nil
+}
+
+func (r *ServiceRepository) K8sRefMap(ctx context.Context) (map[string]string, error) {
+	linked, err := r.ListWithK8sRef(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(linked))
+	for _, s := range linked {
+		out[s.Namespace+"/"+s.Deployment] = s.Slug
+	}
+	return out, nil
+}
+
+func (r *ServiceRepository) GetStatusStats(ctx context.Context) (*StatusStats, error) {
+	var s StatusStats
+	err := r.db.GetContext(ctx, &s, `
+		SELECT
+			COUNT(*)                                          AS total,
+			COUNT(*) FILTER (WHERE status = 'healthy')        AS healthy,
+			COUNT(*) FILTER (WHERE status = 'degraded')       AS degraded,
+			COUNT(*) FILTER (WHERE status = 'down')           AS down,
+			COUNT(*) FILTER (WHERE status = 'unknown')        AS unknown
+		FROM services
+		WHERE lifecycle != 'archived'
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("get status stats: %w", err)
 	}
 	return &s, nil
 }

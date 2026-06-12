@@ -105,3 +105,94 @@ export interface GitHubMetadata {
   last_commit_by?:   string
   synced_at?:        string
 }
+
+export interface KubernetesRef {
+  namespace?:  string
+  deployment?: string
+}
+
+export interface DeploymentStatus {
+  name:               string
+  namespace:          string
+  ready_replicas:     number
+  desired_replicas:   number
+  updated_replicas:   number
+  available_replicas: number
+  image:              string
+  strategy:           string
+  conditions:         {
+    type:     string
+    status:   string
+    reason?:  string
+    message?: string
+  }[]
+  labels?:    Record<string, unknown>
+  created_at: string
+  healthy:    boolean
+}
+
+export interface DeploymentListItem {
+  name:             string
+  namespace:        string
+  ready_replicas:   number
+  desired_replicas: number
+  image:            string
+  healthy:          boolean
+}
+
+export interface PodStatus {
+  name:             string
+  namespace:        string
+  phase:            string
+  ready_containers: number
+  total_containers: number
+  restart_count:    number
+  node:             string
+  pod_ip:           string
+  host_ip:          string
+  started_at?:      string
+  age:              string
+  image:            string
+  healthy:          boolean
+  reason?:          string
+  cpu_display?:     string
+  mem_display?:     string
+  cpu_milli?:       number
+  mem_bytes?:       number
+}
+
+export interface K8sEvent {
+  type:       string
+  reason:     string
+  message:    string
+  object:     string
+  count:      number
+  first_seen: string
+  last_seen:  string
+  age:        string
+}
+
+export interface OverviewDeployment {
+  name:             string
+  namespace:        string
+  ready_replicas:   number
+  desired_replicas: number
+  image:            string
+  healthy:          boolean
+  linked_service?:  string
+}
+
+export interface NamespaceOverview {
+  namespace:   string
+  deployments: OverviewDeployment[]
+}
+
+export interface ClusterOverviewResponse {
+  namespaces: NamespaceOverview[]
+  summary: {
+    total_deployments: number
+    healthy:           number
+    linked:            number
+    unlinked:          number
+  }
+}
